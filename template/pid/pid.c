@@ -1,10 +1,10 @@
 #include "pid.h"
 
 void pi_init(PI_t* analyzer, float kp, float ki, float outmin, float outmax) {
-    analyzer->param.kp     = kp;
-    analyzer->param.ki     = ki;
-    analyzer->param.outmin = outmin;
-    analyzer->param.outmax = outmax;
+    analyzer->param.kp      = kp;
+    analyzer->param.ki      = ki;
+    analyzer->param.out_min = outmin;
+    analyzer->param.out_max = outmax;
 }
 
 float pi_update(PI_t* analyzer, float now, float target) {
@@ -15,6 +15,6 @@ float pi_update(PI_t* analyzer, float now, float target) {
 
     analyzer->_state.previous_error = error;
     analyzer->out += delta_out;
-    analyzer->out = clamp(analyzer->out, analyzer->param.outmin, analyzer->param.outmax);
+    analyzer->out = clamp(analyzer->out, analyzer->param.out_min, analyzer->param.out_max);
     return analyzer->out;
 }

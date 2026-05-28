@@ -9,8 +9,8 @@ typedef struct {
         float kp;
         float ki;
 
-        float outmin;
-        float outmax;
+        float out_min;
+        float out_max;
     } param;
 
     float out;
