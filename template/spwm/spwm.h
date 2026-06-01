@@ -3,6 +3,7 @@
 
 #include "pid.h"
 #include "sin_analyzer.h"
+
 typedef struct {
     struct {
         float pwm_freq;            // PWM载波频率，单位：Hz
@@ -23,6 +24,14 @@ typedef struct {
 
 } SPWM_t;
 
+/**
+ * @brief 初始化 PWM
+ *
+ * @param spwm PWM 结构体指针
+ * @param pwm_freq PWM 载波频率，单位：Hz
+ * @param target_freq 表现频率，单位：Hz
+ * @param target_rms_voltage 目标电压方均根，单位：V
+ */
 void spwm_init(SPWM_t* spwm,
                float pwm_freq,           // PWM载波频率，单位：Hz
                float target_freq,        // 表现频率，单位：Hz
@@ -30,9 +39,22 @@ void spwm_init(SPWM_t* spwm,
 );
 
 
-// 开环
+/**
+ * @brief 更新 PWM 占空比 (开环)
+ *
+ * @param spwm PWM 结构体指针
+ * @return float PWM 占空比，单位：0~1
+ */
 float spwm_update_open(SPWM_t* spwm);
-// 闭环
+
+/**
+ * @brief 更新 PWM 占空比 (闭环)
+ *
+ * @param spwm PWM 结构体指针
+ * @param voltage_sample 电压采样值，单位：V
+ * @param current_sample 电流采样值，单位：A
+ * @return float PWM 占空比，单位：0~1
+ */
 float spwm_update(SPWM_t* spwm, float voltage_sample, float current_sample);
 
 #endif
