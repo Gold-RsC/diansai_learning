@@ -3,6 +3,7 @@
 
 #include "pid.h"
 #include "sin_analyzer.h"
+#include "spll_1ph_sogi.h"
 
 typedef struct {
     struct {
@@ -56,5 +57,38 @@ float spwm_update_open(SPWM_t* spwm);
  * @return float PWM 占空比，单位：0~1
  */
 float spwm_update(SPWM_t* spwm, float voltage_sample, float current_sample);
+
+
+typedef struct {
+    SPWM_t spwm;
+    SPLL_1ph_Sogi_t* spll;
+} SPWM_PLL_t;
+
+/**
+ * @brief 初始化 PWM PLL
+ *
+ * @param spwm_pll PWM PLL 结构体指针
+ * @param pwm_freq PWM 载波频率，单位：Hz
+ * @param target_freq 表现频率，单位：Hz
+ * @param target_rms_voltage 目标电压方均根，单位：V
+ * @param spll PLL 参数指针，指向 SPLL_1ph_Sogi_t 结构体的指针
+ */
+
+void spwm_pll_init(SPWM_PLL_t* spwm_pll,
+                   float pwm_freq,            // PWM载波频率，单位：Hz
+                   float target_freq,         // 表现频率，单位：Hz
+                   float target_rms_voltage,  // 目标电压方均根，单位：V
+                   SPLL_1ph_Sogi_t* spll      // PLL 参数指针，指向 SPLL_1ph_Sogi_t 结构体的指针
+);
+
+/**
+ * @brief 更新 PWM PLL 占空比
+ *
+ * @param spwm_pll PWM PLL 结构体指针
+ * @param grid_voltage 电网电压采样值，单位：V
+ * @param voltage_sample 电压采样值，单位：V
+ * @param current_sample 电流采样值，单位：A
+ */
+void spwm_pll_update(SPWM_PLL_t* spwm_pll, float grid_voltage, float voltage_sample, float current_sample);
 
 #endif
