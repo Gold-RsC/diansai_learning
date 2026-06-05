@@ -2,23 +2,32 @@
 
 void sin_analyzer_init(Sin_Analyzer_t* analyzer, float measure_freq, float min_freq, float max_freq) {
     memset(analyzer, 0, sizeof(*analyzer));
-    analyzer->param.measure_freq = measure_freq;
-    analyzer->param.min_freq     = min_freq;
-    analyzer->param.max_freq     = max_freq;
+    analyzer->param.measure_freq  = measure_freq;
+    analyzer->param.min_freq      = min_freq;
+    analyzer->param.max_freq      = max_freq;
+    analyzer->param.zcd_threshold = 0.01f;
 }
 
 void sin_analyzer_update(Sin_Analyzer_t* analyzer, float voltage_sample, float current_sample) {
     if (analyzer->_state.sample_count == 0) {
-        analyzer->_state.prev_sign = current_sample > 0;
+        analyzer->_state.prev_sign = voltage_sample > analyzer->param.zcd_threshold;
         analyzer->_state.sample_count++;
     }
-    analyzer->_state.prev_sign = current_sample > 0;
     analyzer->_state.voltage_squre_sum += voltage_sample * voltage_sample;
     analyzer->_state.current_squre_sum += current_sample * current_sample;
     analyzer->_state.power_sum += voltage_sample * current_sample;
     analyzer->_state.sample_count++;
 
-    bool current_sign = current_sample > 0;
+    bool current_sign;
+    if (current_sample > analyzer->param.zcd_threshold) {
+        current_sign = true;
+    }
+    else if (current_sample < -analyzer->param.zcd_threshold) {
+        current_sign = false;
+    }
+    else {
+        current_sign = analyzer->_state.prev_sign;
+    }
     if (current_sign ^ analyzer->_state.prev_sign) {
         // 半周期标记位为set，说明此时是周期的结束
         if (analyzer->_state.half_cycle_flag) {

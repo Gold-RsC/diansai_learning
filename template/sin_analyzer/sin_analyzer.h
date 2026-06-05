@@ -5,9 +5,10 @@
 
 typedef struct {
     struct {
-        float measure_freq;  // 测量频率，单位：Hz
-        float min_freq;      // 最小频率，单位：Hz
-        float max_freq;      // 最大频率，单位：Hz
+        float measure_freq;   // 测量频率，单位：Hz
+        float min_freq;       // 最小频率，单位：Hz
+        float max_freq;       // 最大频率，单位：Hz
+        float zcd_threshold;  // ZCD阈值，单位：V
     } param;
 
     struct {
