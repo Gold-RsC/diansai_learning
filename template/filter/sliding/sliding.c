@@ -14,6 +14,7 @@ void Sliding_Filter_Init(Sliding_Filter_t* filter, Float_t out_min, Float_t out_
 Float_t Sliding_Filter_Update(Sliding_Filter_t* filter, Float_t measurement) {
 
     filter->out += (measurement - filter->_state.window[filter->_state.idx]) / SLIDING_FILTER_WINDOW_SIZE;
+    filter->_state.window[filter->_state.idx] = measurement;
 
     filter->_state.idx = (filter->_state.idx + 1) % SLIDING_FILTER_WINDOW_SIZE;
 
