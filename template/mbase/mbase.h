@@ -6,6 +6,7 @@
 #include <string.h>
 #include <math.h>
 
+typedef float Float_t;
 
 #ifndef MATH_PI
 #define MATH_PI 3.1415926f
