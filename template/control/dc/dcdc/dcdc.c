@@ -1,24 +1,24 @@
 #include "dcdc.h"
 
-void Dcdc_Init(Dcdc_t* dcdc, Dcdc_Topology_t topology) {
-    dcdc->param.topology = topology;
-    dcdc->param.duty_min = 0.02f;
+void Dcdc_Init(Dcdc_t* controller, Dcdc_Topology_t topology) {
+    controller->param.topology = topology;
+    controller->param.duty_min = 0.02f;
 
     /* Buck 无右半平面零点，上限可放宽；Boost 与 Buck-Boost 有，需留余量 */
-    dcdc->param.duty_max = (topology == DCDC_BUCK) ? 0.95f : 0.90f;
+    controller->param.duty_max = (topology == DCDC_BUCK) ? 0.95f : 0.90f;
 
-    dcdc->out = dcdc->param.duty_min;
+    controller->out = controller->param.duty_min;
 }
 
-Float_t Dcdc_Feedforward(Dcdc_t* dcdc, Float_t v_in, Float_t v_target) {
+Float_t Dcdc_Feedforward(Dcdc_t* controller, Float_t v_in, Float_t v_target) {
     Float_t duty;
 
     if (v_in <= 0.0f) {
-        dcdc->out = dcdc->param.duty_min;
-        return dcdc->out;
+        controller->out = controller->param.duty_min;
+        return controller->out;
     }
 
-    switch (dcdc->param.topology) {
+    switch (controller->param.topology) {
     case DCDC_BUCK:
         /* Vo = D * Vin  ->  D = Vo / Vin */
         duty = v_target / v_in;
@@ -35,21 +35,21 @@ Float_t Dcdc_Feedforward(Dcdc_t* dcdc, Float_t v_in, Float_t v_target) {
         break;
 
     default:
-        duty = dcdc->param.duty_min;
+        duty = controller->param.duty_min;
         break;
     }
 
-    dcdc->out = Dcdc_Clamp_Duty(dcdc, duty);
+    controller->out = Dcdc_Clamp_Duty(controller, duty);
 
-    return dcdc->out;
+    return controller->out;
 }
 
-Float_t Dcdc_Clamp_Duty(Dcdc_t* dcdc, Float_t duty) {
-    return clamp(duty, dcdc->param.duty_min, dcdc->param.duty_max);
+Float_t Dcdc_Clamp_Duty(Dcdc_t* controller, Float_t duty) {
+    return clamp(duty, controller->param.duty_min, controller->param.duty_max);
 }
 
-Float_t Dcdc_Plant_Gain(Dcdc_t* dcdc, Float_t v_in, Float_t duty) {
-    if (dcdc->param.topology == DCDC_BUCK) {
+Float_t Dcdc_Plant_Gain(Dcdc_t* controller, Float_t v_in, Float_t duty) {
+    if (controller->param.topology == DCDC_BUCK) {
         return v_in;
     }
 

@@ -41,32 +41,32 @@ typedef struct {
 /**
  * @brief 初始化直流量测量
  *
- * @param meter 直流量测量结构体指针
+ * @param analyzer 直流量测量结构体指针
  * @param window_size 窗口长度，单位：采样点数
  *
  * @note window_size 不能为 0。
  */
-void Dc_Meter_Init(Dc_Meter_t* meter, uint32_t window_size);
+void Dc_Meter_Init(Dc_Meter_t* analyzer, uint32_t window_size);
 
 /**
  * @brief 复位直流量测量
  *
- * @param meter 直流量测量结构体指针
+ * @param analyzer 直流量测量结构体指针
  *
  * @note 清空窗口累加状态，重新开始一个窗口。
  */
-void Dc_Meter_Reset(Dc_Meter_t* meter);
+void Dc_Meter_Reset(Dc_Meter_t* analyzer);
 
 /**
  * @brief 更新直流量测量状态
  *
- * @param meter 直流量测量结构体指针
+ * @param analyzer 直流量测量结构体指针
  * @param sample 采样值
  * @return Float_t 最新一次的平均值
  *
  * @note 需以固定的采样周期逐点调用。每满 window_size 个点，
  *       out.average / out.ripple 更新一次，同时 out.ready 置位一拍。
  */
-Float_t Dc_Meter_Update(Dc_Meter_t* meter, Float_t sample);
+Float_t Dc_Meter_Update(Dc_Meter_t* analyzer, Float_t sample);
 
 #endif

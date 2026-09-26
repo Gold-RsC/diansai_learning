@@ -47,7 +47,7 @@ typedef struct {
 /**
  * @brief 初始化阈值保护
  *
- * @param protect 阈值保护结构体指针
+ * @param controller 阈值保护结构体指针
  * @param over_threshold 上阈值（过压/过流）
  * @param under_threshold 下阈值（欠压）
  * @param hysteresis 回差，应大于 0
@@ -56,7 +56,7 @@ typedef struct {
  * @note 需保证 under_threshold < over_threshold 且 hysteresis < 两者之差，
  *       否则回差区间会重叠。
  */
-void Protect_Init(Protect_t* protect,
+void Protect_Init(Protect_t* controller,
                   Float_t over_threshold,
                   Float_t under_threshold,
                   Float_t hysteresis,
@@ -65,20 +65,20 @@ void Protect_Init(Protect_t* protect,
 /**
  * @brief 复位阈值保护
  *
- * @param protect 阈值保护结构体指针
+ * @param controller 阈值保护结构体指针
  *
  * @note 清除锁存的跳闸位与越限计数。若输入仍处于越限状态，下一拍会重新跳闸。
  */
-void Protect_Reset(Protect_t* protect);
+void Protect_Reset(Protect_t* controller);
 
 /**
  * @brief 更新阈值保护状态
  *
- * @param protect 阈值保护结构体指针
+ * @param controller 阈值保护结构体指针
  * @param value 被监视量（电压或电流）
  *
  * @note 需以固定周期调用。调用者应在每次更新后检查 out.tripped。
  */
-void Protect_Update(Protect_t* protect, Float_t value);
+void Protect_Update(Protect_t* controller, Float_t value);
 
 #endif

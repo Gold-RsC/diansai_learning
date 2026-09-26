@@ -28,12 +28,12 @@ typedef struct {
 /**
  * @brief 初始化 PWM
  *
- * @param spwm PWM 结构体指针
+ * @param controller PWM 结构体指针
  * @param pwm_freq PWM 载波频率，单位：Hz
  * @param target_freq 表现频率，单位：Hz
  * @param target_rms_voltage 目标电压方均根，单位：V
  */
-void SPWM_Init(SPWM_t* spwm,
+void SPWM_Init(SPWM_t* controller,
                Float_t pwm_freq,           // PWM载波频率，单位：Hz
                Float_t target_freq,        // 表现频率，单位：Hz
                Float_t target_rms_voltage  // 目标电压方均根，单位：V
@@ -43,20 +43,20 @@ void SPWM_Init(SPWM_t* spwm,
 /**
  * @brief 更新 PWM 占空比 (开环)
  *
- * @param spwm PWM 结构体指针
+ * @param controller PWM 结构体指针
  * @return Float_t PWM 占空比，单位：0~1
  */
-Float_t SPWM_Update_Open(SPWM_t* spwm);
+Float_t SPWM_Update_Open(SPWM_t* controller);
 
 /**
  * @brief 更新 PWM 占空比 (闭环)
  *
- * @param spwm PWM 结构体指针
+ * @param controller PWM 结构体指针
  * @param voltage_sample 电压采样值，单位：V
  * @param current_sample 电流采样值，单位：A
  * @return Float_t PWM 占空比，单位：0~1
  */
-Float_t SPWM_Update(SPWM_t* spwm, Float_t voltage_sample, Float_t current_sample);
+Float_t SPWM_Update(SPWM_t* controller, Float_t voltage_sample, Float_t current_sample);
 
 
 typedef struct {
@@ -67,14 +67,14 @@ typedef struct {
 /**
  * @brief 初始化 PWM PLL
  *
- * @param spwm_pll PWM PLL 结构体指针
+ * @param controller PWM PLL 结构体指针
  * @param pwm_freq PWM 载波频率，单位：Hz
  * @param target_freq 表现频率，单位：Hz
  * @param target_rms_voltage 目标电压方均根，单位：V
  * @param spll PLL 参数指针，指向 SPLL_1ph_Sogi_t 结构体的指针
  */
 
-void SPWM_PLL_Init(SPWM_PLL_t* spwm_pll,
+void SPWM_PLL_Init(SPWM_PLL_t* controller,
                    Float_t pwm_freq,            // PWM载波频率，单位：Hz
                    Float_t target_freq,         // 表现频率，单位：Hz
                    Float_t target_rms_voltage,  // 目标电压方均根，单位：V
@@ -84,11 +84,11 @@ void SPWM_PLL_Init(SPWM_PLL_t* spwm_pll,
 /**
  * @brief 更新 PWM PLL 占空比
  *
- * @param spwm_pll PWM PLL 结构体指针
+ * @param controller PWM PLL 结构体指针
  * @param grid_voltage 电网电压采样值，单位：V
  * @param voltage_sample 电压采样值，单位：V
  * @param current_sample 电流采样值，单位：A
  */
-Float_t SPWM_PLL_Update(SPWM_PLL_t* spwm_pll, Float_t grid_voltage, Float_t voltage_sample, Float_t current_sample);
+Float_t SPWM_PLL_Update(SPWM_PLL_t* controller, Float_t grid_voltage, Float_t voltage_sample, Float_t current_sample);
 
 #endif

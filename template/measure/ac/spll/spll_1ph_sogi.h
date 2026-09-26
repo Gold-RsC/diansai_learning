@@ -52,7 +52,7 @@ typedef struct {
 /**
  * @brief 初始化单相 SOGI 锁相环
  *
- * @param spll 单相 SOGI 锁相环结构体指针
+ * @param analyzer 单相 SOGI 锁相环结构体指针
  * @param grid_freq 电网额定频率，单位：Hz，如 50.0f 或 60.0f
  * @param isr_freq ISR 调用频率，单位：Hz，如 20000.0f
  * @param lpf_b0 环路滤波器系数 b0
@@ -61,7 +61,7 @@ typedef struct {
  * @note 初始化时会自动计算 SOGI 内部系数，无需手动配置。
  *       环路滤波器系数 b0、b1 需根据带宽需求离线设计。
  */
-void SPLL_1Ph_Sogi_Init(SPLL_1ph_Sogi_t* spll,
+void SPLL_1Ph_Sogi_Init(SPLL_1ph_Sogi_t* analyzer,
                         Float_t grid_freq,
                         Float_t isr_freq,
                         Float_t lpf_b0,
@@ -70,32 +70,32 @@ void SPLL_1Ph_Sogi_Init(SPLL_1ph_Sogi_t* spll,
 /**
  * @brief 复位单相 SOGI 锁相环内部状态
  *
- * @param spll 单相 SOGI 锁相环结构体指针
+ * @param analyzer 单相 SOGI 锁相环结构体指针
  *
  * @note 复位后所有内部缓冲区清零，输出频率归零，相位角归零。
  *       通常在启动或故障恢复时调用。
  */
-void SPLL_1Ph_Sogi_Reset(SPLL_1ph_Sogi_t* spll);
+void SPLL_1Ph_Sogi_Reset(SPLL_1ph_Sogi_t* analyzer);
 
 /**
  * @brief 单步更新单相 SOGI 锁相环
  *
- * @param spll 单相 SOGI 锁相环结构体指针
+ * @param analyzer 单相 SOGI 锁相环结构体指针
  * @param ac_voltage 单相电网电压采样值（标幺值 pu 或实际值均可）
  *
  * @note 需在 ISR 或控制循环中以固定周期调用，周期应与 init 时指定的 isr_freq 一致。
- *       每次调用会更新 spll->out 中的频率、相位角、正余弦值等输出。
+ *       每次调用会更新 analyzer->out 中的频率、相位角、正余弦值等输出。
  */
-void SPLL_1Ph_Sogi_Update(SPLL_1ph_Sogi_t* spll, Float_t ac_voltage);
+void SPLL_1Ph_Sogi_Update(SPLL_1ph_Sogi_t* analyzer, Float_t ac_voltage);
 
 /**
  * @brief 重新计算 SOGI 内部系数
  *
- * @param spll 单相 SOGI 锁相环结构体指针
+ * @param analyzer 单相 SOGI 锁相环结构体指针
  *
  * @note 当 grid_freq 或 isr_freq 发生变化时，需调用此函数更新内部系数。
  *       正常情况下由 init 自动调用，无需手动调用。
  */
-void SPLL_1Ph_Sogi_Coeff_Calc(SPLL_1ph_Sogi_t* spll);
+void SPLL_1Ph_Sogi_Coeff_Calc(SPLL_1ph_Sogi_t* analyzer);
 
 #endif // __SPLL_1PH_SOGI_H__

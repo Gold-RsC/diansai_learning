@@ -1,31 +1,31 @@
 #include "soft_start.h"
 
-void Soft_Start_Init(Soft_Start_t* soft_start, Float_t step, Float_t start) {
-    soft_start->param.step  = step;
-    soft_start->param.start = start;
+void Soft_Start_Init(Soft_Start_t* controller, Float_t step, Float_t start) {
+    controller->param.step  = step;
+    controller->param.start = start;
 
-    Soft_Start_Reset(soft_start);
+    Soft_Start_Reset(controller);
 }
 
-void Soft_Start_Reset(Soft_Start_t* soft_start) {
-    soft_start->_state.value = soft_start->param.start;
-    soft_start->out          = soft_start->param.start;
+void Soft_Start_Reset(Soft_Start_t* controller) {
+    controller->_state.value = controller->param.start;
+    controller->out          = controller->param.start;
 }
 
-Float_t Soft_Start_Update(Soft_Start_t* soft_start, Float_t target) {
-    Float_t delta = target - soft_start->_state.value;
+Float_t Soft_Start_Update(Soft_Start_t* controller, Float_t target) {
+    Float_t delta = target - controller->_state.value;
 
-    if (delta > soft_start->param.step) {
-        soft_start->_state.value += soft_start->param.step;
+    if (delta > controller->param.step) {
+        controller->_state.value += controller->param.step;
     }
-    else if (delta < -soft_start->param.step) {
-        soft_start->_state.value -= soft_start->param.step;
+    else if (delta < -controller->param.step) {
+        controller->_state.value -= controller->param.step;
     }
     else {
-        soft_start->_state.value = target;
+        controller->_state.value = target;
     }
 
-    soft_start->out = soft_start->_state.value;
+    controller->out = controller->_state.value;
 
-    return soft_start->out;
+    return controller->out;
 }

@@ -46,17 +46,17 @@ typedef struct {
 /**
  * @brief 初始化 DC-DC 拓扑模型
  *
- * @param dcdc DC-DC 拓扑模型结构体指针
+ * @param controller DC-DC 拓扑模型结构体指针
  * @param topology 拓扑类型
  *
  * @note 占空比安全区按拓扑自动设定。
  */
-void Dcdc_Init(Dcdc_t* dcdc, Dcdc_Topology_t topology);
+void Dcdc_Init(Dcdc_t* controller, Dcdc_Topology_t topology);
 
 /**
  * @brief 计算前馈占空比
  *
- * @param dcdc DC-DC 拓扑模型结构体指针
+ * @param controller DC-DC 拓扑模型结构体指针
  * @param v_in 输入电压，单位：V
  * @param v_target 目标输出电压，单位：V
  * @return Float_t 前馈占空比，已按拓扑安全区限幅
@@ -64,21 +64,21 @@ void Dcdc_Init(Dcdc_t* dcdc, Dcdc_Topology_t topology);
  * @note 结果同时写入 out。v_in 为 0 或公式无解时返回安全下限。
  *       Boost 要求 v_target > v_in，否则返回安全上限。
  */
-Float_t Dcdc_Feedforward(Dcdc_t* dcdc, Float_t v_in, Float_t v_target);
+Float_t Dcdc_Feedforward(Dcdc_t* controller, Float_t v_in, Float_t v_target);
 
 /**
  * @brief 占空比安全限幅
  *
- * @param dcdc DC-DC 拓扑模型结构体指针
+ * @param controller DC-DC 拓扑模型结构体指针
  * @param duty 待限幅的占空比
  * @return Float_t 限幅后的占空比
  */
-Float_t Dcdc_Clamp_Duty(Dcdc_t* dcdc, Float_t duty);
+Float_t Dcdc_Clamp_Duty(Dcdc_t* controller, Float_t duty);
 
 /**
  * @brief 计算当前工作点的被控对象增益
  *
- * @param dcdc DC-DC 拓扑模型结构体指针
+ * @param controller DC-DC 拓扑模型结构体指针
  * @param v_in 输入电压，单位：V
  * @param duty 当前占空比
  * @return Float_t 增益 dVo/dD
@@ -89,6 +89,6 @@ Float_t Dcdc_Clamp_Duty(Dcdc_t* dcdc, Float_t duty);
  *              Buck-Boost  Vin / (1-D)^2
  *       用它来按工作点调整 PI 参数：增益越大，kp 应越小。
  */
-Float_t Dcdc_Plant_Gain(Dcdc_t* dcdc, Float_t v_in, Float_t duty);
+Float_t Dcdc_Plant_Gain(Dcdc_t* controller, Float_t v_in, Float_t duty);
 
 #endif

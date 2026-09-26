@@ -51,7 +51,7 @@ typedef struct {
 /**
  * @brief 初始化总谐波畸变率测量
  *
- * @param thd 总谐波畸变率结构体指针
+ * @param analyzer 总谐波畸变率结构体指针
  * @param sample_freq 采样（ISR 调用）频率，单位：Hz
  * @param fundamental_freq 基波频率，单位：Hz
  * @param max_order 最高分析次数，超过 THD_MAX_ORDER 时按上限截断
@@ -59,27 +59,27 @@ typedef struct {
  * @note 窗口长度由 sample_freq / fundamental_freq 自动算出，无需指定。
  *       需保证 max_order * fundamental_freq < sample_freq / 2。
  */
-void Thd_Init(Thd_t* thd, Float_t sample_freq, Float_t fundamental_freq, uint8_t max_order);
+void Thd_Init(Thd_t* analyzer, Float_t sample_freq, Float_t fundamental_freq, uint8_t max_order);
 
 /**
  * @brief 复位总谐波畸变率测量
  *
- * @param thd 总谐波畸变率结构体指针
+ * @param analyzer 总谐波畸变率结构体指针
  *
  * @note 清空全部 Goertzel 单元的累加状态，重新开始一个窗口。
  */
-void Thd_Reset(Thd_t* thd);
+void Thd_Reset(Thd_t* analyzer);
 
 /**
  * @brief 更新总谐波畸变率测量状态
  *
- * @param thd 总谐波畸变率结构体指针
+ * @param analyzer 总谐波畸变率结构体指针
  * @param sample 采样值
  * @return Float_t 最新一次的 THD
  *
  * @note 需以 sample_freq 指定的周期逐点调用。每满一个基波周期，
  *       out.fundamental / out.thd 更新一次，同时 out.ready 置位一拍。
  */
-Float_t Thd_Update(Thd_t* thd, Float_t sample);
+Float_t Thd_Update(Thd_t* analyzer, Float_t sample);
 
 #endif

@@ -163,10 +163,10 @@ Float_t Sliding_Filter_Update(Sliding_Filter_t* filter, Float_t measurement);
 `PI_Reset` 用于启动与故障恢复，`PI_Set_Output` 供多环无扰切换。
 
 ```c
-void    PI_Init(PI_t* analyzer, Float_t kp, Float_t ki, Float_t outmin, Float_t outmax);
-Float_t PI_Update(PI_t* analyzer, Float_t now, Float_t target);
-void    PI_Reset(PI_t* analyzer);
-void    PI_Set_Output(PI_t* analyzer, Float_t output);
+void    PI_Init(PI_t* controller, Float_t kp, Float_t ki, Float_t outmin, Float_t outmax);
+Float_t PI_Update(PI_t* controller, Float_t now, Float_t target);
+void    PI_Reset(PI_t* controller);
+void    PI_Set_Output(PI_t* controller, Float_t output);
 ```
 
 ## control/common/soft_start
@@ -174,9 +174,9 @@ void    PI_Set_Output(PI_t* analyzer, Float_t output);
 软启动斜坡限制器。上下行都受限，兼作变化率限制器。
 
 ```c
-void    Soft_Start_Init(Soft_Start_t* soft_start, Float_t step, Float_t start);
-void    Soft_Start_Reset(Soft_Start_t* soft_start);
-Float_t Soft_Start_Update(Soft_Start_t* soft_start, Float_t target);
+void    Soft_Start_Init(Soft_Start_t* controller, Float_t step, Float_t start);
+void    Soft_Start_Reset(Soft_Start_t* controller);
+Float_t Soft_Start_Update(Soft_Start_t* controller, Float_t target);
 ```
 
 ## control/common/protect
@@ -184,10 +184,10 @@ Float_t Soft_Start_Update(Soft_Start_t* soft_start, Float_t target);
 过压/过流与欠压保护。带回差、计数去抖、跳闸锁存。
 
 ```c
-void Protect_Init(Protect_t* protect, Float_t over_threshold, Float_t under_threshold,
+void Protect_Init(Protect_t* controller, Float_t over_threshold, Float_t under_threshold,
                   Float_t hysteresis, uint16_t trip_count);
-void Protect_Reset(Protect_t* protect);
-void Protect_Update(Protect_t* protect, Float_t value);
+void Protect_Reset(Protect_t* controller);
+void Protect_Update(Protect_t* controller, Float_t value);
 ```
 
 结果在 `out.over` / `out.under` / `out.tripped`。
@@ -200,10 +200,10 @@ DC-DC 拓扑模型。**不含控制环路**，只提供稳态关系、前馈占�
 ```c
 typedef enum { DCDC_BUCK, DCDC_BOOST, DCDC_BUCK_BOOST } Dcdc_Topology_t;
 
-void    Dcdc_Init(Dcdc_t* dcdc, Dcdc_Topology_t topology);
-Float_t Dcdc_Feedforward(Dcdc_t* dcdc, Float_t v_in, Float_t v_target);
-Float_t Dcdc_Clamp_Duty(Dcdc_t* dcdc, Float_t duty);
-Float_t Dcdc_Plant_Gain(Dcdc_t* dcdc, Float_t v_in, Float_t duty);
+void    Dcdc_Init(Dcdc_t* controller, Dcdc_Topology_t topology);
+Float_t Dcdc_Feedforward(Dcdc_t* controller, Float_t v_in, Float_t v_target);
+Float_t Dcdc_Clamp_Duty(Dcdc_t* controller, Float_t duty);
+Float_t Dcdc_Plant_Gain(Dcdc_t* controller, Float_t v_in, Float_t duty);
 ```
 
 Boost 与 Buck-Boost 有右半平面零点，闭环带宽不要超过开关频率的 1/10。
@@ -214,12 +214,12 @@ CV/CC 双环控制器。两环同时运行，带切换回差；闲置环跟踪�
 切换瞬间占空比不跳变。
 
 ```c
-void    Cv_Cc_Init(Cv_Cc_t* cv_cc, Float_t v_target, Float_t i_target,
+void    Cv_Cc_Init(Cv_Cc_t* controller, Float_t v_target, Float_t i_target,
                    Float_t kp_v, Float_t ki_v, Float_t kp_i, Float_t ki_i,
                    Float_t duty_min, Float_t duty_max, Float_t switch_margin);
-void    Cv_Cc_Reset(Cv_Cc_t* cv_cc);
-Float_t Cv_Cc_Update(Cv_Cc_t* cv_cc, Float_t v_out, Float_t i_out);
-Cv_Cc_Mode_t Cv_Cc_Get_Mode(Cv_Cc_t* cv_cc);
+void    Cv_Cc_Reset(Cv_Cc_t* controller);
+Float_t Cv_Cc_Update(Cv_Cc_t* controller, Float_t v_out, Float_t i_out);
+Cv_Cc_Mode_t Cv_Cc_Get_Mode(Cv_Cc_t* controller);
 ```
 
 ## control/dc/mppt
@@ -227,10 +227,10 @@ Cv_Cc_Mode_t Cv_Cc_Get_Mode(Cv_Cc_t* cv_cc);
 扰动观察法 MPPT。功率上升则保持扰动方向，下降则反向。
 
 ```c
-void    Mppt_Init(Mppt_t* mppt, Float_t step, Float_t min_duty, Float_t max_duty,
+void    Mppt_Init(Mppt_t* controller, Float_t step, Float_t min_duty, Float_t max_duty,
                   uint32_t period);
-void    Mppt_Reset(Mppt_t* mppt);
-Float_t Mppt_Update(Mppt_t* mppt, Float_t v_in, Float_t i_in);
+void    Mppt_Reset(Mppt_t* controller);
+Float_t Mppt_Update(Mppt_t* controller, Float_t v_in, Float_t i_in);
 ```
 
 输入电压/电流应先经低通滤波，否则功率比较会被噪声翻转。
@@ -241,11 +241,11 @@ Float_t Mppt_Update(Mppt_t* mppt, Float_t v_in, Float_t i_in);
 用于交流量闭环——PI 对交流量有稳态误差，PR 没有。
 
 ```c
-void    Pr_Init(Pr_t* pr, Float_t kp, Float_t kr,
+void    Pr_Init(Pr_t* controller, Float_t kp, Float_t kr,
                 Float_t resonant_freq, Float_t bandwidth, Float_t sample_freq,
                 Float_t out_min, Float_t out_max);
-void    Pr_Reset(Pr_t* pr);
-Float_t Pr_Update(Pr_t* pr, Float_t error);
+void    Pr_Reset(Pr_t* controller);
+Float_t Pr_Update(Pr_t* controller, Float_t error);
 ```
 
 注意本模块直接接收**误差**，而不是实测值与目标值两个参数。
@@ -255,10 +255,10 @@ Float_t Pr_Update(Pr_t* pr, Float_t error);
 下垂控制。`f = f0 - m*P`，`V = V0 - n*Q`。并联运行类赛题的核心算法。
 
 ```c
-void Droop_Init(Droop_t* droop, Float_t freq_noload, Float_t amp_noload,
+void Droop_Init(Droop_t* controller, Float_t freq_noload, Float_t amp_noload,
                 Float_t m, Float_t n, Float_t filter_cutoff, Float_t sample_freq);
-void Droop_Reset(Droop_t* droop);
-void Droop_Update(Droop_t* droop, Float_t p, Float_t q);
+void Droop_Reset(Droop_t* controller);
+void Droop_Update(Droop_t* controller, Float_t p, Float_t q);
 ```
 
 结果在 `out.freq` 与 `out.amplitude`。P/Q 内置低通，**不可省略**。
@@ -269,14 +269,14 @@ SPWM 占空比生成。`SPWM_Update_Open` 开环，`SPWM_Update` 闭环。
 `SPWM_PLL_t` 版本从外部 PLL 取相位。
 
 ```c
-void    SPWM_Init(SPWM_t* spwm, Float_t pwm_freq, Float_t target_freq,
+void    SPWM_Init(SPWM_t* controller, Float_t pwm_freq, Float_t target_freq,
                   Float_t target_rms_voltage);
-Float_t SPWM_Update_Open(SPWM_t* spwm);
-Float_t SPWM_Update(SPWM_t* spwm, Float_t voltage_sample, Float_t current_sample);
+Float_t SPWM_Update_Open(SPWM_t* controller);
+Float_t SPWM_Update(SPWM_t* controller, Float_t voltage_sample, Float_t current_sample);
 
-void    SPWM_PLL_Init(SPWM_PLL_t* spwm_pll, Float_t pwm_freq, Float_t target_freq,
-                      Float_t target_rms_voltage, SPLL_1ph_Sogi_t* spll);
-Float_t SPWM_PLL_Update(SPWM_PLL_t* spwm_pll, Float_t grid_voltage,
+void    SPWM_PLL_Init(SPWM_PLL_t* controller, Float_t pwm_freq, Float_t target_freq,
+                      Float_t target_rms_voltage, SPLL_1ph_Sogi_t* analyzer);
+Float_t SPWM_PLL_Update(SPWM_PLL_t* controller, Float_t grid_voltage,
                         Float_t voltage_sample, Float_t current_sample);
 ```
 
@@ -285,9 +285,9 @@ Float_t SPWM_PLL_Update(SPWM_PLL_t* spwm_pll, Float_t grid_voltage,
 直流量测量：窗口内平均值与纹波峰峰值。窗口应覆盖整数个开关周期。
 
 ```c
-void    Dc_Meter_Init(Dc_Meter_t* meter, uint32_t window_size);
-void    Dc_Meter_Reset(Dc_Meter_t* meter);
-Float_t Dc_Meter_Update(Dc_Meter_t* meter, Float_t sample);
+void    Dc_Meter_Init(Dc_Meter_t* analyzer, uint32_t window_size);
+void    Dc_Meter_Reset(Dc_Meter_t* analyzer);
+Float_t Dc_Meter_Update(Dc_Meter_t* analyzer, Float_t sample);
 ```
 
 结果在 `out.average` / `out.ripple`，`out.ready` 为单拍脉冲。
@@ -310,11 +310,11 @@ void Sin_Analyzer_Update(Sin_Analyzer_t* analyzer, Float_t voltage_sample,
 单相 SOGI 锁相环，取自 TI C2000 SolarLib（原版 IQ23 定点，此处为浮点改写）。
 
 ```c
-void SPLL_1Ph_Sogi_Init(SPLL_1ph_Sogi_t* spll, Float_t grid_freq, Float_t isr_freq,
+void SPLL_1Ph_Sogi_Init(SPLL_1ph_Sogi_t* analyzer, Float_t grid_freq, Float_t isr_freq,
                         Float_t lpf_b0, Float_t lpf_b1);
-void SPLL_1Ph_Sogi_Reset(SPLL_1ph_Sogi_t* spll);
-void SPLL_1Ph_Sogi_Update(SPLL_1ph_Sogi_t* spll, Float_t ac_voltage);
-void SPLL_1Ph_Sogi_Coeff_Calc(SPLL_1ph_Sogi_t* spll);
+void SPLL_1Ph_Sogi_Reset(SPLL_1ph_Sogi_t* analyzer);
+void SPLL_1Ph_Sogi_Update(SPLL_1ph_Sogi_t* analyzer, Float_t ac_voltage);
+void SPLL_1Ph_Sogi_Coeff_Calc(SPLL_1ph_Sogi_t* analyzer);
 ```
 
 **输入必须归一化为标幺值**，否则环路会振荡。
@@ -324,10 +324,10 @@ void SPLL_1Ph_Sogi_Coeff_Calc(SPLL_1ph_Sogi_t* spll);
 总谐波畸变率。窗口固定取一个基波周期 `N = fs/f0`，各次谐波自动落在整数 bin。
 
 ```c
-void    Thd_Init(Thd_t* thd, Float_t sample_freq, Float_t fundamental_freq,
+void    Thd_Init(Thd_t* analyzer, Float_t sample_freq, Float_t fundamental_freq,
                  uint8_t max_order);
-void    Thd_Reset(Thd_t* thd);
-Float_t Thd_Update(Thd_t* thd, Float_t sample);
+void    Thd_Reset(Thd_t* analyzer);
+Float_t Thd_Update(Thd_t* analyzer, Float_t sample);
 ```
 
 结果在 `out.fundamental` / `out.thd`（小数，0.05 表示 5%）。

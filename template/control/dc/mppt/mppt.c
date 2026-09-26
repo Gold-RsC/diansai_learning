@@ -1,43 +1,43 @@
 #include "mppt.h"
 
-void Mppt_Init(Mppt_t* mppt, Float_t step, Float_t min_duty, Float_t max_duty, uint32_t period) {
-    mppt->param.step     = step;
-    mppt->param.min_duty = min_duty;
-    mppt->param.max_duty = max_duty;
-    mppt->param.period   = period;
+void Mppt_Init(Mppt_t* controller, Float_t step, Float_t min_duty, Float_t max_duty, uint32_t period) {
+    controller->param.step     = step;
+    controller->param.min_duty = min_duty;
+    controller->param.max_duty = max_duty;
+    controller->param.period   = period;
 
-    Mppt_Reset(mppt);
+    Mppt_Reset(controller);
 }
 
-void Mppt_Reset(Mppt_t* mppt) {
-    mppt->_state.duty       = mppt->param.min_duty;
-    mppt->_state.direction  = 1.0f;
-    mppt->_state.prev_power = 0.0f;
-    mppt->_state.count      = 0;
+void Mppt_Reset(Mppt_t* controller) {
+    controller->_state.duty       = controller->param.min_duty;
+    controller->_state.direction  = 1.0f;
+    controller->_state.prev_power = 0.0f;
+    controller->_state.count      = 0;
 
-    mppt->out = mppt->param.min_duty;
+    controller->out = controller->param.min_duty;
 }
 
-Float_t Mppt_Update(Mppt_t* mppt, Float_t v_in, Float_t i_in) {
+Float_t Mppt_Update(Mppt_t* controller, Float_t v_in, Float_t i_in) {
     Float_t power = v_in * i_in;
 
-    mppt->_state.count++;
+    controller->_state.count++;
 
-    if (mppt->_state.count >= mppt->param.period) {
-        mppt->_state.count = 0;
+    if (controller->_state.count >= controller->param.period) {
+        controller->_state.count = 0;
 
         /* 功率下降则反向扰动 */
-        if (power < mppt->_state.prev_power) {
-            mppt->_state.direction = -mppt->_state.direction;
+        if (power < controller->_state.prev_power) {
+            controller->_state.direction = -controller->_state.direction;
         }
 
-        mppt->_state.duty += mppt->_state.direction * mppt->param.step;
-        mppt->_state.duty = clamp(mppt->_state.duty, mppt->param.min_duty, mppt->param.max_duty);
+        controller->_state.duty += controller->_state.direction * controller->param.step;
+        controller->_state.duty = clamp(controller->_state.duty, controller->param.min_duty, controller->param.max_duty);
 
-        mppt->_state.prev_power = power;
+        controller->_state.prev_power = power;
     }
 
-    mppt->out = mppt->_state.duty;
+    controller->out = controller->_state.duty;
 
-    return mppt->out;
+    return controller->out;
 }

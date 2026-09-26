@@ -64,7 +64,7 @@ typedef struct {
 /**
  * @brief 初始化准比例谐振控制器
  *
- * @param pr 准比例谐振控制器结构体指针
+ * @param controller 准比例谐振控制器结构体指针
  * @param kp 比例系数
  * @param kr 谐振系数
  * @param resonant_freq 谐振频率，单位：Hz，通常取基波频率
@@ -77,7 +77,7 @@ typedef struct {
  *       任一改变都需重新初始化。kp 增大提高整体响应，kr 增大提高谐振点
  *       跟踪精度；带宽过窄时谐振频率稍有偏移就会失效。
  */
-void Pr_Init(Pr_t* pr,
+void Pr_Init(Pr_t* controller,
              Float_t kp,
              Float_t kr,
              Float_t resonant_freq,
@@ -89,22 +89,22 @@ void Pr_Init(Pr_t* pr,
 /**
  * @brief 复位准比例谐振控制器
  *
- * @param pr 准比例谐振控制器结构体指针
+ * @param controller 准比例谐振控制器结构体指针
  *
  * @note 清空误差与谐振输出的历史，系数保留。
  */
-void Pr_Reset(Pr_t* pr);
+void Pr_Reset(Pr_t* controller);
 
 /**
  * @brief 更新准比例谐振控制器状态
  *
- * @param pr 准比例谐振控制器结构体指针
+ * @param controller 准比例谐振控制器结构体指针
  * @param error 误差 = 目标 - 实际
  * @return Float_t 控制量
  *
  * @note 需以 sample_freq 指定的周期调用。与 PI_Update 不同，本函数直接
  *       接收误差而不是实测值与目标值两个参数，便于在坐标变换后使用。
  */
-Float_t Pr_Update(Pr_t* pr, Float_t error);
+Float_t Pr_Update(Pr_t* controller, Float_t error);
 
 #endif

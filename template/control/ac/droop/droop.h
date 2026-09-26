@@ -53,7 +53,7 @@ typedef struct {
 /**
  * @brief 初始化下垂控制
  *
- * @param droop 下垂控制结构体指针
+ * @param controller 下垂控制结构体指针
  * @param freq_noload 空载频率 f0，单位：Hz
  * @param amp_noload 空载电压幅值 V0，单位：V
  * @param m 有功-频率下垂系数，单位：Hz/W
@@ -65,7 +65,7 @@ typedef struct {
  *       最低降到 0），不设人为的百分比上限。若需按变流器容量收紧，
  *       初始化后直接改 param.p_max / param.q_max。
  */
-void Droop_Init(Droop_t* droop,
+void Droop_Init(Droop_t* controller,
                 Float_t freq_noload,
                 Float_t amp_noload,
                 Float_t m,
@@ -76,21 +76,21 @@ void Droop_Init(Droop_t* droop,
 /**
  * @brief 复位下垂控制
  *
- * @param droop 下垂控制结构体指针
+ * @param controller 下垂控制结构体指针
  *
  * @note 输出回到空载值，P/Q 低通状态清零。
  */
-void Droop_Reset(Droop_t* droop);
+void Droop_Reset(Droop_t* controller);
 
 /**
  * @brief 更新下垂控制状态
  *
- * @param droop 下垂控制结构体指针
+ * @param controller 下垂控制结构体指针
  * @param p 实测有功功率，单位：W
  * @param q 实测无功功率，单位：var
  *
  * @note 需以 sample_freq 指定的周期调用。结果在 out.freq 与 out.amplitude。
  */
-void Droop_Update(Droop_t* droop, Float_t p, Float_t q);
+void Droop_Update(Droop_t* controller, Float_t p, Float_t q);
 
 #endif

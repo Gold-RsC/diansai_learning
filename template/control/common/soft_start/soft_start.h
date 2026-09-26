@@ -33,33 +33,33 @@ typedef struct {
 /**
  * @brief 初始化软启动斜坡限制器
  *
- * @param soft_start 软启动结构体指针
+ * @param controller 软启动结构体指针
  * @param step 每拍最大变化量，应大于 0
  * @param start 起始值
  *
  * @note 达到目标所需拍数 = |目标 - start| / step，据此换算软启动时间：
  *       软启动时间 = 拍数 * 调用周期。
  */
-void Soft_Start_Init(Soft_Start_t* soft_start, Float_t step, Float_t start);
+void Soft_Start_Init(Soft_Start_t* controller, Float_t step, Float_t start);
 
 /**
  * @brief 复位软启动斜坡限制器
  *
- * @param soft_start 软启动结构体指针
+ * @param controller 软启动结构体指针
  *
  * @note 当前值回到 param.start，重新开始爬升。
  */
-void Soft_Start_Reset(Soft_Start_t* soft_start);
+void Soft_Start_Reset(Soft_Start_t* controller);
 
 /**
  * @brief 更新软启动斜坡限制器状态
  *
- * @param soft_start 软启动结构体指针
+ * @param controller 软启动结构体指针
  * @param target 目标值
  * @return Float_t 限速后的值
  *
  * @note 需以固定周期调用。
  */
-Float_t Soft_Start_Update(Soft_Start_t* soft_start, Float_t target);
+Float_t Soft_Start_Update(Soft_Start_t* controller, Float_t target);
 
 #endif
