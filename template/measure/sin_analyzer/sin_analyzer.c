@@ -1,6 +1,6 @@
 #include "sin_analyzer.h"
 
-void Sin_Analyzer_Init(Sin_Analyzer_t* analyzer, float measure_freq, float min_freq, float max_freq) {
+void Sin_Analyzer_Init(Sin_Analyzer_t* analyzer, Float_t measure_freq, Float_t min_freq, Float_t max_freq) {
     memset(analyzer, 0, sizeof(*analyzer));
     analyzer->param.measure_freq  = measure_freq;
     analyzer->param.min_freq      = min_freq;
@@ -8,7 +8,7 @@ void Sin_Analyzer_Init(Sin_Analyzer_t* analyzer, float measure_freq, float min_f
     analyzer->param.zcd_threshold = 0.01f;
 }
 
-void Sin_Analyzer_Update(Sin_Analyzer_t* analyzer, float voltage_sample, float current_sample) {
+void Sin_Analyzer_Update(Sin_Analyzer_t* analyzer, Float_t voltage_sample, Float_t current_sample) {
     if (analyzer->_state.sample_count == 0) {
         analyzer->_state.prev_sign = voltage_sample > analyzer->param.zcd_threshold;
         analyzer->_state.sample_count++;
@@ -32,10 +32,10 @@ void Sin_Analyzer_Update(Sin_Analyzer_t* analyzer, float voltage_sample, float c
         // 半周期标记位为set，说明此时是周期的结束
         if (analyzer->_state.half_cycle_flag) {
             uint32_t N = analyzer->_state.sample_count / 2;
-            float freq = analyzer->param.measure_freq / (2 * N);
+            Float_t freq = analyzer->param.measure_freq / (2 * N);
 
             if (freq >= analyzer->param.min_freq && freq <= analyzer->param.max_freq) {
-                float inv_N = 1.0f / (2 * N);
+                Float_t inv_N = 1.0f / (2 * N);
 
                 analyzer->out.rms_voltage = sqrt(inv_N * analyzer->_state.voltage_squre_sum);
                 analyzer->out.rms_current = sqrt(inv_N * analyzer->_state.current_squre_sum);

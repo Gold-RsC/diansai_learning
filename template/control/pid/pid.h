@@ -6,17 +6,17 @@
 
 typedef struct {
     struct {
-        float kp;
-        float ki;
+        Float_t kp;
+        Float_t ki;
 
-        float out_min;
-        float out_max;
+        Float_t out_min;
+        Float_t out_max;
     } param;
 
-    float out;
+    Float_t out;
 
     struct {
-        float previous_error;
+        Float_t previous_error;
     } _state;
 } PI_t;
 
@@ -29,7 +29,7 @@ typedef struct {
  * @param outmin 输出最小值
  * @param outmax 输出最大值
  */
-void PI_Init(PI_t* analyzer, float kp, float ki, float outmin, float outmax);
+void PI_Init(PI_t* analyzer, Float_t kp, Float_t ki, Float_t outmin, Float_t outmax);
 
 /**
  * @brief 更新 PID 控制器
@@ -37,8 +37,8 @@ void PI_Init(PI_t* analyzer, float kp, float ki, float outmin, float outmax);
  * @param analyzer PID 控制器 结构体指针
  * @param now 实际值
  * @param target 目标值
- * @return float PID 输出值
+ * @return Float_t PID 输出值
  */
-float PI_Update(PI_t* analyzer, float now, float target);
+Float_t PI_Update(PI_t* analyzer, Float_t now, Float_t target);
 
 #endif

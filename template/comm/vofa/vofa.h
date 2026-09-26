@@ -20,6 +20,6 @@
  * @param _num 数据数量
  * @return size_t 数据数量
  */
-size_t Vofa_JustFloat(float* _data, size_t _num);
+size_t Vofa_JustFloat(Float_t* _data, size_t _num);
 
 #endif

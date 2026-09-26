@@ -11,41 +11,41 @@
  */
 typedef struct {
     struct {
-        float grid_freq;   // 电网额定频率，单位：Hz
-        float isr_freq;    // ISR 调用频率（即控制周期频率），单位：Hz
-        float lpf_b0;      // 环路滤波器系数 b0
-        float lpf_b1;      // 环路滤波器系数 b1
+        Float_t grid_freq;   // 电网额定频率，单位：Hz
+        Float_t isr_freq;    // ISR 调用频率（即控制周期频率），单位：Hz
+        Float_t lpf_b0;      // 环路滤波器系数 b0
+        Float_t lpf_b1;      // 环路滤波器系数 b1
     } param;
 
     struct {
-        float fo;          // 输出频率（锁相结果），单位：Hz
-        float theta;       // 输出相位角，单位：rad，范围 [0, 2π)
-        float sine;        // 相位角正弦值
-        float cosine;      // 相位角余弦值
-        float u_Q;         // Q轴电压分量（误差信号，理想锁定时为0）
-        float u_D;         // D轴电压分量
+        Float_t fo;          // 输出频率（锁相结果），单位：Hz
+        Float_t theta;       // 输出相位角，单位：rad，范围 [0, 2π)
+        Float_t sine;        // 相位角正弦值
+        Float_t cosine;      // 相位角余弦值
+        Float_t u_Q;         // Q轴电压分量（误差信号，理想锁定时为0）
+        Float_t u_D;         // D轴电压分量
     } out;
 
     struct {
-        float u[3];        // 输入电压数据缓冲区 [n, n-1, n-2]
-        float osg_u[3];    // SOGI 直接通路输出缓冲区 [n, n-1, n-2]
-        float osg_qu[3];   // SOGI 正交通路输出缓冲区 [n, n-1, n-2]
-        float ylf[2];      // 环路滤波器数据存储 [n, n-1]
-        float u_Q_prev;    // 上一时刻 Q 轴电压分量（环路滤波器历史值）
+        Float_t u[3];        // 输入电压数据缓冲区 [n, n-1, n-2]
+        Float_t osg_u[3];    // SOGI 直接通路输出缓冲区 [n, n-1, n-2]
+        Float_t osg_qu[3];   // SOGI 正交通路输出缓冲区 [n, n-1, n-2]
+        Float_t ylf[2];      // 环路滤波器数据存储 [n, n-1]
+        Float_t u_Q_prev;    // 上一时刻 Q 轴电压分量（环路滤波器历史值）
 
         // SOGI 系数（内部计算，无需用户配置）
-        float osg_k;       // SOGI 增益系数 k，通常取 0.5
-        float osg_x;       // 中间变量 x = ω * Ts
-        float osg_y;       // 中间变量 y = (ω * Ts)^2
-        float osg_b0;      // OSG 直接通路分子系数 b0
-        float osg_b2;      // OSG 直接通路分子系数 b2
-        float osg_a1;      // OSG 分母系数 a1
-        float osg_a2;      // OSG 分母系数 a2
-        float osg_qb0;     // OSG 正交通路分子系数 qb0
-        float osg_qb1;     // OSG 正交通路分子系数 qb1
-        float osg_qb2;     // OSG 正交通路分子系数 qb2
+        Float_t osg_k;       // SOGI 增益系数 k，通常取 0.5
+        Float_t osg_x;       // 中间变量 x = ω * Ts
+        Float_t osg_y;       // 中间变量 y = (ω * Ts)^2
+        Float_t osg_b0;      // OSG 直接通路分子系数 b0
+        Float_t osg_b2;      // OSG 直接通路分子系数 b2
+        Float_t osg_a1;      // OSG 分母系数 a1
+        Float_t osg_a2;      // OSG 分母系数 a2
+        Float_t osg_qb0;     // OSG 正交通路分子系数 qb0
+        Float_t osg_qb1;     // OSG 正交通路分子系数 qb1
+        Float_t osg_qb2;     // OSG 正交通路分子系数 qb2
 
-        float delta_t;     // 采样时间间隔 = 1 / isr_freq，单位：s
+        Float_t delta_t;     // 采样时间间隔 = 1 / isr_freq，单位：s
     } _state;
 } SPLL_1ph_Sogi_t;
 
@@ -62,10 +62,10 @@ typedef struct {
  *       环路滤波器系数 b0、b1 需根据带宽需求离线设计。
  */
 void SPLL_1Ph_Sogi_Init(SPLL_1ph_Sogi_t* spll,
-                        float grid_freq,
-                        float isr_freq,
-                        float lpf_b0,
-                        float lpf_b1);
+                        Float_t grid_freq,
+                        Float_t isr_freq,
+                        Float_t lpf_b0,
+                        Float_t lpf_b1);
 
 /**
  * @brief 复位单相 SOGI 锁相环内部状态
@@ -86,7 +86,7 @@ void SPLL_1Ph_Sogi_Reset(SPLL_1ph_Sogi_t* spll);
  * @note 需在 ISR 或控制循环中以固定周期调用，周期应与 init 时指定的 isr_freq 一致。
  *       每次调用会更新 spll->out 中的频率、相位角、正余弦值等输出。
  */
-void SPLL_1Ph_Sogi_Update(SPLL_1ph_Sogi_t* spll, float ac_voltage);
+void SPLL_1Ph_Sogi_Update(SPLL_1ph_Sogi_t* spll, Float_t ac_voltage);
 
 /**
  * @brief 重新计算 SOGI 内部系数

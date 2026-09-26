@@ -1,10 +1,10 @@
 #include "spll_1ph_sogi.h"
 
 void SPLL_1Ph_Sogi_Init(SPLL_1ph_Sogi_t* spll,
-                        float grid_freq,
-                        float isr_freq,
-                        float lpf_b0,
-                        float lpf_b1)
+                        Float_t grid_freq,
+                        Float_t isr_freq,
+                        Float_t lpf_b0,
+                        Float_t lpf_b1)
 {
     // 清零整个结构体，避免未初始化数据干扰
     memset(spll, 0, sizeof(SPLL_1ph_Sogi_t));
@@ -56,7 +56,7 @@ void SPLL_1Ph_Sogi_Reset(SPLL_1ph_Sogi_t* spll)
 void SPLL_1Ph_Sogi_Coeff_Calc(SPLL_1ph_Sogi_t* spll)
 {
     // 计算角频率 ω = 2 * π * fn
-    float wn = spll->param.grid_freq * 2.0f * MATH_PI;
+    Float_t wn = spll->param.grid_freq * 2.0f * MATH_PI;
 
     // SOGI 增益系数 k，典型值取 0.5
     // k 影响 SOGI 的带宽：k 越大，带宽越宽，动态响应越快，但滤波效果变差
@@ -70,7 +70,7 @@ void SPLL_1Ph_Sogi_Coeff_Calc(SPLL_1ph_Sogi_t* spll)
 
     // 计算归一化因子 temp = 1 / (x + y + 4)
     // 该因子来源于双线性变换（Tustin 变换）离散化 SOGI 传递函数
-    float temp = 1.0f / (spll->_state.osg_x + spll->_state.osg_y + 4.0f);
+    Float_t temp = 1.0f / (spll->_state.osg_x + spll->_state.osg_y + 4.0f);
 
     // OSG 直接通路分子系数
     // 直接通路传递函数实现同相信号提取
@@ -88,7 +88,7 @@ void SPLL_1Ph_Sogi_Coeff_Calc(SPLL_1ph_Sogi_t* spll)
     spll->_state.osg_qb2 = spll->_state.osg_qb0;
 }
 
-void SPLL_1Ph_Sogi_Update(SPLL_1ph_Sogi_t* spll, float ac_voltage)
+void SPLL_1Ph_Sogi_Update(SPLL_1ph_Sogi_t* spll, Float_t ac_voltage)
 {
     // -------------------------------------------------------------------------
     // 步骤 1：更新当前输入电压采样值到缓冲区
