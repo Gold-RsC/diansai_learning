@@ -89,6 +89,6 @@ void SPWM_PLL_Init(SPWM_PLL_t* spwm_pll,
  * @param voltage_sample 电压采样值，单位：V
  * @param current_sample 电流采样值，单位：A
  */
-void SPWM_PLL_Update(SPWM_PLL_t* spwm_pll, float grid_voltage, float voltage_sample, float current_sample);
+Float_t SPWM_PLL_Update(SPWM_PLL_t* spwm_pll, float grid_voltage, float voltage_sample, float current_sample);
 
 #endif
