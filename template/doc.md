@@ -11,7 +11,7 @@ dsp/      通用数字信号处理模块
 filter/   滤波器
 control/  控制
 measure/  测量与估计
-comm/     通信与上位机
+debug/    调试输出与上位机
 ```
 
 ## mbase
@@ -142,7 +142,7 @@ void SPLL_1Ph_Sogi_Update(SPLL_1ph_Sogi_t* spll, Float_t ac_voltage);
 void SPLL_1Ph_Sogi_Coeff_Calc(SPLL_1ph_Sogi_t* spll);
 ```
 
-## comm/print_adapt
+## debug/print_adapt
 
 串口格式化输出。`UART_ADDR` 宏指向上位机串口，输出缓冲 256 字节。
 
@@ -152,7 +152,7 @@ size_t Printf_DMA(const char* format, ...);      // DMA
 size_t Printf_IT(const char* format, ...);       // 中断式
 ```
 
-## comm/vofa
+## debug/vofa
 
 VOFA+ 上位机协议。
 
