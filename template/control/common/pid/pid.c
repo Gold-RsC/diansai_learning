@@ -18,3 +18,12 @@ Float_t PI_Update(PI_t* analyzer, Float_t now, Float_t target) {
     analyzer->out = clamp(analyzer->out, analyzer->param.out_min, analyzer->param.out_max);
     return analyzer->out;
 }
+
+void PI_Reset(PI_t* analyzer) {
+    analyzer->_state.previous_error = 0.0f;
+    analyzer->out                   = 0.0f;
+}
+
+void PI_Set_Output(PI_t* analyzer, Float_t output) {
+    analyzer->out = clamp(output, analyzer->param.out_min, analyzer->param.out_max);
+}
