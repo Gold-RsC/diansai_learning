@@ -44,7 +44,7 @@ typedef struct {
  * @param min_freq 最小频率，单位：Hz
  * @param max_freq 最大频率，单位：Hz
  */
-void sin_analyzer_init(Sin_Analyzer_t* analyzer, float measure_freq, float min_freq, float max_freq);
+void Sin_Analyzer_Init(Sin_Analyzer_t* analyzer, float measure_freq, float min_freq, float max_freq);
 
 /**
  * @brief 更新正弦波分析器
@@ -54,7 +54,7 @@ void sin_analyzer_init(Sin_Analyzer_t* analyzer, float measure_freq, float min_f
  * @param current_sample 采样电流，单位：A
  * @note 在ADC采样中断中使用，更新正弦波分析器的输入数据
  */
-void sin_analyzer_update(Sin_Analyzer_t* analyzer,
+void Sin_Analyzer_Update(Sin_Analyzer_t* analyzer,
                          float voltage_sample,  // 采样电压，单位：V
                          float current_sample   // 采样电流，单位：A
 );

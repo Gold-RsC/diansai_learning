@@ -4,7 +4,7 @@
 
 #include "print_adapt.h"
 
-#define Vofa_Printf(format, ...) (printf_NORMAL(format, ##__VA_ARGS__))
+#define Vofa_Printf(format, ...) (Printf_Normal(format, ##__VA_ARGS__))
 
 
 /**

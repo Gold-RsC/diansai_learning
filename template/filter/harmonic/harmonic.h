@@ -1,5 +1,5 @@
-#ifndef __HARMONIC_FILTER_H__
-#define __HARMONIC_FILTER_H__
+#ifndef __HARMONIC_H__
+#define __HARMONIC_H__
 
 #include "mbase.h"
 

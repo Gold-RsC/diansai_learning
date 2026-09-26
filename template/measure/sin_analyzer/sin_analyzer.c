@@ -1,6 +1,6 @@
 #include "sin_analyzer.h"
 
-void sin_analyzer_init(Sin_Analyzer_t* analyzer, float measure_freq, float min_freq, float max_freq) {
+void Sin_Analyzer_Init(Sin_Analyzer_t* analyzer, float measure_freq, float min_freq, float max_freq) {
     memset(analyzer, 0, sizeof(*analyzer));
     analyzer->param.measure_freq  = measure_freq;
     analyzer->param.min_freq      = min_freq;
@@ -8,7 +8,7 @@ void sin_analyzer_init(Sin_Analyzer_t* analyzer, float measure_freq, float min_f
     analyzer->param.zcd_threshold = 0.01f;
 }
 
-void sin_analyzer_update(Sin_Analyzer_t* analyzer, float voltage_sample, float current_sample) {
+void Sin_Analyzer_Update(Sin_Analyzer_t* analyzer, float voltage_sample, float current_sample) {
     if (analyzer->_state.sample_count == 0) {
         analyzer->_state.prev_sign = voltage_sample > analyzer->param.zcd_threshold;
         analyzer->_state.sample_count++;

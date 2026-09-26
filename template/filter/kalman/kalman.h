@@ -1,5 +1,5 @@
-#ifndef __KALMAN_FILTER_H__
-#define __KALMAN_FILTER_H__
+#ifndef __KALMAN_H__
+#define __KALMAN_H__
 
 #include "mbase.h"
 

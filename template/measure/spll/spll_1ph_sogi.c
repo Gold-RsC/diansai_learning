@@ -1,6 +1,6 @@
 #include "spll_1ph_sogi.h"
 
-void spll_1ph_sogi_init(SPLL_1ph_Sogi_t* spll,
+void SPLL_1Ph_Sogi_Init(SPLL_1ph_Sogi_t* spll,
                         float grid_freq,
                         float isr_freq,
                         float lpf_b0,
@@ -19,10 +19,10 @@ void spll_1ph_sogi_init(SPLL_1ph_Sogi_t* spll,
     spll->_state.delta_t = 1.0f / isr_freq;
 
     // 计算 SOGI 内部系数
-    spll_1ph_sogi_coeff_calc(spll);
+    SPLL_1Ph_Sogi_Coeff_Calc(spll);
 }
 
-void spll_1ph_sogi_reset(SPLL_1ph_Sogi_t* spll)
+void SPLL_1Ph_Sogi_Reset(SPLL_1ph_Sogi_t* spll)
 {
     // 清零输入数据缓冲区
     spll->_state.u[0] = 0.0f;
@@ -53,7 +53,7 @@ void spll_1ph_sogi_reset(SPLL_1ph_Sogi_t* spll)
     spll->out.u_D    = 0.0f;
 }
 
-void spll_1ph_sogi_coeff_calc(SPLL_1ph_Sogi_t* spll)
+void SPLL_1Ph_Sogi_Coeff_Calc(SPLL_1ph_Sogi_t* spll)
 {
     // 计算角频率 ω = 2 * π * fn
     float wn = spll->param.grid_freq * 2.0f * MATH_PI;
@@ -88,7 +88,7 @@ void spll_1ph_sogi_coeff_calc(SPLL_1ph_Sogi_t* spll)
     spll->_state.osg_qb2 = spll->_state.osg_qb0;
 }
 
-void spll_1ph_sogi_update(SPLL_1ph_Sogi_t* spll, float ac_voltage)
+void SPLL_1Ph_Sogi_Update(SPLL_1ph_Sogi_t* spll, float ac_voltage)
 {
     // -------------------------------------------------------------------------
     // 步骤 1：更新当前输入电压采样值到缓冲区

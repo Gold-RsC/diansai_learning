@@ -29,7 +29,7 @@ typedef struct {
  * @param outmin 输出最小值
  * @param outmax 输出最大值
  */
-void pi_init(PI_t* analyzer, float kp, float ki, float outmin, float outmax);
+void PI_Init(PI_t* analyzer, float kp, float ki, float outmin, float outmax);
 
 /**
  * @brief 更新 PID 控制器
@@ -39,6 +39,6 @@ void pi_init(PI_t* analyzer, float kp, float ki, float outmin, float outmax);
  * @param target 目标值
  * @return float PID 输出值
  */
-float pi_update(PI_t* analyzer, float now, float target);
+float PI_Update(PI_t* analyzer, float now, float target);
 
 #endif

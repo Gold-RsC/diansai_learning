@@ -23,20 +23,20 @@ extern uint8_t uart_out_buffer[UART_OUT_BUFFER_SIZE];
  * @param ... 可变参数
  * @return size_t 打印的字符节数
  */
-size_t printf_NORMAL(const char* format, ...);
+size_t Printf_Normal(const char* format, ...);
 /**
  * @brief DMA打印
  * @param format 格式化字符串
  * @param ... 可变参数
  * @return size_t 打印的字符节数
  */
-size_t printf_DMA(const char* format, ...);
+size_t Printf_DMA(const char* format, ...);
 /**
  * @brief 中断式打印
  * @param format 格式化字符串
  * @param ... 可变参数
  * @return size_t 打印的字符节数
  */
-size_t printf_IT(const char* format, ...);
+size_t Printf_IT(const char* format, ...);
 
 #endif

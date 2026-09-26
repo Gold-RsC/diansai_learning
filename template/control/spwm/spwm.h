@@ -33,7 +33,7 @@ typedef struct {
  * @param target_freq 表现频率，单位：Hz
  * @param target_rms_voltage 目标电压方均根，单位：V
  */
-void spwm_init(SPWM_t* spwm,
+void SPWM_Init(SPWM_t* spwm,
                float pwm_freq,           // PWM载波频率，单位：Hz
                float target_freq,        // 表现频率，单位：Hz
                float target_rms_voltage  // 目标电压方均根，单位：V
@@ -46,7 +46,7 @@ void spwm_init(SPWM_t* spwm,
  * @param spwm PWM 结构体指针
  * @return float PWM 占空比，单位：0~1
  */
-float spwm_update_open(SPWM_t* spwm);
+float SPWM_Update_Open(SPWM_t* spwm);
 
 /**
  * @brief 更新 PWM 占空比 (闭环)
@@ -56,7 +56,7 @@ float spwm_update_open(SPWM_t* spwm);
  * @param current_sample 电流采样值，单位：A
  * @return float PWM 占空比，单位：0~1
  */
-float spwm_update(SPWM_t* spwm, float voltage_sample, float current_sample);
+float SPWM_Update(SPWM_t* spwm, float voltage_sample, float current_sample);
 
 
 typedef struct {
@@ -74,7 +74,7 @@ typedef struct {
  * @param spll PLL 参数指针，指向 SPLL_1ph_Sogi_t 结构体的指针
  */
 
-void spwm_pll_init(SPWM_PLL_t* spwm_pll,
+void SPWM_PLL_Init(SPWM_PLL_t* spwm_pll,
                    float pwm_freq,            // PWM载波频率，单位：Hz
                    float target_freq,         // 表现频率，单位：Hz
                    float target_rms_voltage,  // 目标电压方均根，单位：V
@@ -89,6 +89,6 @@ void spwm_pll_init(SPWM_PLL_t* spwm_pll,
  * @param voltage_sample 电压采样值，单位：V
  * @param current_sample 电流采样值，单位：A
  */
-void spwm_pll_update(SPWM_PLL_t* spwm_pll, float grid_voltage, float voltage_sample, float current_sample);
+void SPWM_PLL_Update(SPWM_PLL_t* spwm_pll, float grid_voltage, float voltage_sample, float current_sample);
 
 #endif

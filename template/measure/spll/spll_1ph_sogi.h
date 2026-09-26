@@ -61,7 +61,7 @@ typedef struct {
  * @note 初始化时会自动计算 SOGI 内部系数，无需手动配置。
  *       环路滤波器系数 b0、b1 需根据带宽需求离线设计。
  */
-void spll_1ph_sogi_init(SPLL_1ph_Sogi_t* spll,
+void SPLL_1Ph_Sogi_Init(SPLL_1ph_Sogi_t* spll,
                         float grid_freq,
                         float isr_freq,
                         float lpf_b0,
@@ -75,7 +75,7 @@ void spll_1ph_sogi_init(SPLL_1ph_Sogi_t* spll,
  * @note 复位后所有内部缓冲区清零，输出频率归零，相位角归零。
  *       通常在启动或故障恢复时调用。
  */
-void spll_1ph_sogi_reset(SPLL_1ph_Sogi_t* spll);
+void SPLL_1Ph_Sogi_Reset(SPLL_1ph_Sogi_t* spll);
 
 /**
  * @brief 单步更新单相 SOGI 锁相环
@@ -86,7 +86,7 @@ void spll_1ph_sogi_reset(SPLL_1ph_Sogi_t* spll);
  * @note 需在 ISR 或控制循环中以固定周期调用，周期应与 init 时指定的 isr_freq 一致。
  *       每次调用会更新 spll->out 中的频率、相位角、正余弦值等输出。
  */
-void spll_1ph_sogi_update(SPLL_1ph_Sogi_t* spll, float ac_voltage);
+void SPLL_1Ph_Sogi_Update(SPLL_1ph_Sogi_t* spll, float ac_voltage);
 
 /**
  * @brief 重新计算 SOGI 内部系数
@@ -96,6 +96,6 @@ void spll_1ph_sogi_update(SPLL_1ph_Sogi_t* spll, float ac_voltage);
  * @note 当 grid_freq 或 isr_freq 发生变化时，需调用此函数更新内部系数。
  *       正常情况下由 init 自动调用，无需手动调用。
  */
-void spll_1ph_sogi_coeff_calc(SPLL_1ph_Sogi_t* spll);
+void SPLL_1Ph_Sogi_Coeff_Calc(SPLL_1ph_Sogi_t* spll);
 
 #endif // __SPLL_1PH_SOGI_H__

@@ -1,5 +1,5 @@
-#ifndef __SMOOTH_FILTER_H__
-#define __SMOOTH_FILTER_H__
+#ifndef __SLIDING_H__
+#define __SLIDING_H__
 
 #include "mbase.h"
 

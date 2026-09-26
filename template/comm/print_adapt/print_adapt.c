@@ -14,7 +14,7 @@ uint8_t uart_out_buffer[UART_OUT_BUFFER_SIZE];
             length = UART_OUT_BUFFER_SIZE - 1;                                                                         \
         }                                                                                                              \
     } while (0)
-size_t printf_NORMAL(const char* format, ...) {
+size_t Printf_Normal(const char* format, ...) {
     size_t length = 0;
     __PRINT_ADAPT_FORMAT_STR__();
 
@@ -24,7 +24,7 @@ size_t printf_NORMAL(const char* format, ...) {
     return length;
 }
 
-size_t printf_DMA(const char* format, ...) {
+size_t Printf_DMA(const char* format, ...) {
     size_t length = 0;
     __PRINT_ADAPT_FORMAT_STR__();
 
@@ -33,7 +33,7 @@ size_t printf_DMA(const char* format, ...) {
     return length;
 }
 
-size_t printf_IT(const char* format, ...) {
+size_t Printf_IT(const char* format, ...) {
     size_t length = 0;
     __PRINT_ADAPT_FORMAT_STR__();
 
