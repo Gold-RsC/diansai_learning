@@ -2,6 +2,7 @@
 #define __HARMONIC_H__
 
 #include "mbase.h"
+#include "notch.h"
 
 /**
  * @brief 陷波器品质因数
@@ -17,36 +18,6 @@
  *          建议取值范围 20 ~ 50，不要超过 100。
  */
 #define HARMONIC_FILTER_Q 30.0f
-
-/**
- * @brief 二阶 IIR 陷波器
- *
- * @details 传递函数（系数已除以 a0，使用时无需再归一化）：
- *              H(z) = (b0 + b1*z^-1 + b2*z^-2) / (1 + a1*z^-1 + a2*z^-2)
- *          在中心频率处增益严格为 0，在直流与奈奎斯特频率处增益严格为 1。
- *          差分方程：
- *              y[n] = b0*x[n] + b1*x[n-1] + b2*x[n-2] - a1*y[n-1] - a2*y[n-2]
- */
-typedef struct {
-
-    struct {
-        Float_t b0;  // 分子系数 b0
-        Float_t b1;  // 分子系数 b1
-        Float_t b2;  // 分子系数 b2
-
-        Float_t a1;  // 分母系数 a1
-        Float_t a2;  // 分母系数 a2
-    } param;
-
-    struct {
-        Float_t x1;  // 输入历史 x[n-1]
-        Float_t x2;  // 输入历史 x[n-2]
-
-        Float_t y1;  // 输出历史 y[n-1]
-        Float_t y2;  // 输出历史 y[n-2]
-    } _state;
-
-} Harmonic_Notch_t;
 
 /**
  * @brief 谐波抑制滤波器
@@ -80,9 +51,9 @@ typedef struct {
     } param;
 
     struct {
-        Harmonic_Notch_t notch_2;  // 2 次谐波陷波器
-        Harmonic_Notch_t notch_3;  // 3 次谐波陷波器
-        Harmonic_Notch_t notch_5;  // 5 次谐波陷波器
+        Notch_Filter_t notch_2;  // 2 次谐波陷波器
+        Notch_Filter_t notch_3;  // 3 次谐波陷波器
+        Notch_Filter_t notch_5;  // 5 次谐波陷波器
     } _state;
 
     Float_t out;
