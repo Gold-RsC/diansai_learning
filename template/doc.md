@@ -163,7 +163,7 @@ Float_t Sliding_Filter_Update(Sliding_Filter_t* filter, Float_t measurement);
 `PI_Reset` 用于启动与故障恢复，`PI_Set_Output` 供多环无扰切换。
 
 ```c
-void    PI_Init(PI_t* controller, Float_t kp, Float_t ki, Float_t outmin, Float_t outmax);
+void    PI_Init(PI_t* controller, Float_t kp, Float_t ki, Float_t out_min, Float_t out_max);
 Float_t PI_Update(PI_t* controller, Float_t now, Float_t target);
 void    PI_Reset(PI_t* controller);
 void    PI_Set_Output(PI_t* controller, Float_t output);
