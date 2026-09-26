@@ -19,6 +19,57 @@ measure/
 debug/          调试输出与上位机
 ```
 
+## 目录
+
+**mbase** — 基础类型与宏
+
+- [mbase](#mbase)
+
+**dsp/** — 通用 DSP 原语
+
+- [dsp/notch](#dspnotch)
+- [dsp/goertzel](#dspgoertzel)
+- [dsp/lpf](#dsplpf)
+
+**filter/** — 通用滤波器
+
+- [filter/harmonic](#filterharmonic)
+- [filter/kalman](#filterkalman)
+- [filter/sliding](#filtersliding)
+
+**control/common/** — 与拓扑无关的控制原语
+
+- [control/common/pid](#controlcommonpid)
+- [control/common/soft_start](#controlcommonsoft_start)
+- [control/common/protect](#controlcommonprotect)
+
+**control/dc/** — 直流量场合
+
+- [control/dc/dcdc](#controldcdcdc)
+- [control/dc/cv_cc](#controldccv_cc)
+- [control/dc/mppt](#controldcmppt)
+
+**control/ac/** — 交流量场合
+
+- [control/ac/pr](#controlacpr)
+- [control/ac/droop](#controlacdroop)
+- [control/ac/spwm](#controlacspwm)
+
+**measure/dc/** — 直流量测量
+
+- [measure/dc/dc_meter](#measuredcdc_meter)
+
+**measure/ac/** — 交流量测量
+
+- [measure/ac/sin_analyzer](#measureacsin_analyzer)
+- [measure/ac/spll](#measureacspll)
+- [measure/ac/thd](#measureacthd)
+
+**debug/** — 调试输出与上位机
+
+- [debug/print_adapt](#debugprint_adapt)
+- [debug/vofa](#debugvofa)
+
 ## mbase
 
 无函数，只有类型与宏，所有模块的根依赖。
