@@ -7,6 +7,7 @@
 
 ```
 mbase/          基础类型与宏
+driver/         MCU 外设驱动（依赖具体芯片的 HAL）
 dsp/            通用 DSP 原语（与具体电路无关）
 filter/         通用滤波器
 control/
@@ -24,6 +25,11 @@ debug/          调试输出与上位机
 **mbase** — 基础类型与宏
 
 - [mbase](#mbase)
+
+**driver/** — MCU 外设驱动
+
+- [driver/hrtim](#driverhrtim)
+- [driver/adc](#driveradc)
 
 **dsp/** — 通用 DSP 原语
 
@@ -84,6 +90,85 @@ max(x, y)           (x) > (y) ? (x) : (y)
 clamp(x, min, max)  限幅
 diff(x, y)          fabsf((x) - (y))
 ```
+
+## driver/hrtim
+
+HRTIM 高分辨率 PWM 的 CubeMX 配置封装。句柄、周期、死区、输出极性、驱动源
+都在 CubeMX 里配；本模块只做运行期的启停、中断使能、比较值写入，
+并把 HAL 的 16 个 `__weak` 回调集中成一张注册表。
+
+```c
+#define HRTIM_HANDLER (&hhrtim1)   // 指向 CubeMX 生成的句柄，名字不符时改这一行
+
+/* 启停。参数可用 "|" 拼接 */
+CHRTIM_Timer_Start(hrtim_timerid);               // 参数用 HRTIM_TIMERID_*
+CHRTIM_Output_Start(hrtim_output_identifier);    // 参数用 HRTIM_OUTPUT_Tx1 / Tx2
+
+/* 中断使能 */
+CHRTIM_Master_Enable_IT(hrtim_master_interrupt_register);
+CHRTIM_Master_Disable_IT(hrtim_master_interrupt_register);
+CHRTIM_Timer_Enable_IT(hrtim_timer_index, hrtim_timer_interrupt_register);
+CHRTIM_Timer_Disable_IT(hrtim_timer_index, hrtim_timer_interrupt_register);
+
+/* 改占空比：cmp_value = 周期 × 占空比 */
+CHRTIM_Compare_Set(hrtim_timer_index, cmp_unit, cmp_value);
+
+/* 回调注册 */
+void CHRTIM_IT_Callbacks_Register(HRTIM_IT_Callbacks_t* hrtim_it_callbacks);
+```
+
+`HRTIM_IT_Callbacks_t` 共 16 个成员：`registers_update_cbk`、`repetition_event_cbk`、
+`compare1~4_cbk`、`capture1~2_cbk`、`delayed_protection_cbk`、`counter_reset_cbk`、
+`output1_set_cbk`、`output1_reset_cbk`、`output2_set_cbk`、`output2_reset_cbk`、
+`burst_dma_transfer_cbk`、`error_cbk`。未注册的成员会被判空跳过。
+
+`error_cbk` 收到的 `TimerIdx` 恒为 `HRTIM_TIMERINDEX_NUM`（= 7），**不是有效的
+定时器索引**，不要拿它去索引数组。这一点在 `config_hrtim.h` 的成员注释里也写了。
+
+**CubeMX 侧该配哪些项（时钟、周期、预装载、死区、置位/复位源）写在
+`config_hrtim.h` 顶部的注释里。**
+
+## driver/adc
+
+多通道 ADC 的 CubeMX 配置封装：定时器触发 + DMA 循环搬运 + 回调注册。
+
+```c
+/* 用户配置区 */
+#define ADC1_CHANNEL_NUM 3     // 必须与 CubeMX 的 Number of Conversion 一致
+#define ADC2_CHANNEL_NUM 0
+...
+typedef uint16_t ADC_DMA_Buffer_t;   // 与 CubeMX 里 DMA 数据宽度对应
+
+/* 共享缓冲，各 ADC 依次排布 */
+#define ADC_DMA_BUFFER_SIZE (...)
+extern ADC_DMA_Buffer_t adc_dma_buffer[ADC_DMA_BUFFER_SIZE];
+
+#define ADC_DMA1_BUFFER_OFFSET (0)
+#define ADC_DMA2_BUFFER_OFFSET (ADC_DMA1_BUFFER_OFFSET + ADC1_CHANNEL_NUM)
+...
+
+/* 句柄 */
+#define ADC1_HANDLER (&hadc1)
+...
+
+void CADC_Calibration_Start(void);
+void CADC_Start_DMA(void);
+void CADC_Stop_DMA(void);
+
+void ADC_IT_Callbacks_Register(ADC_IT_Callbacks_t* adc_it_callbacks);
+```
+
+`ADC_IT_Callbacks_t` 两个成员：`conv_cplt_cbk`、`conv_half_cplt_cbk`，
+未注册会被判空跳过。
+
+**CubeMX 侧：连续转换要关掉、触发源选 HRTIM 的 ADC 触发事件，配置项注释在
+`config_adc.h` 顶部。**
+
+## 说明：两个 config 头依赖尚未创建的文件
+
+`config_hrtim.h` include 了 `"hrtim.h"`，`config_adc.h` include 了 `"adc.h"`。
+**这两个文件目前还不存在**，仓库里单独编译会停在
+`fatal error: hrtim.h: No such file or directory`。
 
 ## dsp/notch
 
