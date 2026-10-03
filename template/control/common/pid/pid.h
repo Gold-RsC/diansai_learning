@@ -28,8 +28,9 @@ typedef struct {
  * @param ki Integral Gain
  * @param out_min 输出最小值
  * @param out_max 输出最大值
+ * @param init_value 初始输出值
  */
-void PI_Init(PI_t* controller, Float_t kp, Float_t ki, Float_t out_min, Float_t out_max);
+void PI_Init(PI_t* controller, Float_t kp, Float_t ki, Float_t out_min, Float_t out_max, Float_t init_value);
 
 /**
  * @brief 更新 PID 控制器

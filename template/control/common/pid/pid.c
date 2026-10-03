@@ -1,10 +1,11 @@
 #include "pid.h"
 
-void PI_Init(PI_t* controller, Float_t kp, Float_t ki, Float_t out_min, Float_t out_max) {
+void PI_Init(PI_t* controller, Float_t kp, Float_t ki, Float_t out_min, Float_t out_max, Float_t init_value) {
     controller->param.kp      = kp;
     controller->param.ki      = ki;
     controller->param.out_min = out_min;
     controller->param.out_max = out_max;
+    controller->out           = init_value;
 }
 
 Float_t PI_Update(PI_t* controller, Float_t now, Float_t target) {
