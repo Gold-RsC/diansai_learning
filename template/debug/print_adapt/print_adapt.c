@@ -14,6 +14,14 @@ uint8_t uart_out_buffer[UART_OUT_BUFFER_SIZE];
             length = UART_OUT_BUFFER_SIZE - 1;                                                                         \
         }                                                                                                              \
     } while (0)
+
+
+int fputc(int ch, FILE* f) {
+    uint32_t temp = ch;
+    HAL_UART_Transmit(UART_ADDR, (uint8_t*)&temp, 1, 0xFFFFFFFF);
+    return ch;
+}
+
 size_t Printf_Normal(const char* format, ...) {
     size_t length = 0;
     __PRINT_ADAPT_FORMAT_STR__();

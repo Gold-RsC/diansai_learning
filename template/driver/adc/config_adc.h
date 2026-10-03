@@ -1,4 +1,5 @@
 /**
+ * @brief 使用CubeMX配置STM32G474的ADC，用于定时触发对模拟信号的采样
  * @note CubeMX 配置
  * 1. Pinout & Configuration -> ADC1 -> Mode
  *   - IN1: IN1 Single-ended

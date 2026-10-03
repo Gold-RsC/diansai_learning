@@ -1,4 +1,5 @@
 /**
+ * @brief 使用CubeMX配置STM32G474的HRTIM，用于生成PWM信号
  * @note CubeMX 配置：
  * 1. Clock Configuration -> HCLK(MKz)设置为100 -> 回车
  * 2. Pinout & Configuration -> HRTIM1
