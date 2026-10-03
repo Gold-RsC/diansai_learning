@@ -68,6 +68,11 @@
  */
 typedef uint16_t ADC_DMA_Buffer_t;
 
+/**
+ * @brief 电压参考通道在DMA缓冲区的位置
+ */
+#define VREFINT_RAW_POS 0
+
 /********************* USER CONFIG END ***************************/
 
 /**
@@ -94,14 +99,29 @@ extern ADC_DMA_Buffer_t adc_dma_buffer[ADC_DMA_BUFFER_SIZE];
 #define ADC4_HANDLER (&hadc4)
 #define ADC5_HANDLER (&hadc5)
 
-/**
- * @note 电压参考通道校准地址: VREFINT_CAL_ADDR (const uint16_t*)
- */
 
 /**
  * @brief 启动ADC校准
  */
 void CADC_Calibration_Start(void);
+
+
+/**
+ * @note 电压参考通道校准地址: VREFINT_CAL_ADDR (const uint16_t*)
+ * @note 电压参考通道电压值：VREFINT_CAL_VREF
+ */
+#define VREFINT_CAL (*VREFINT_CAL_ADDR)
+extern Float_t VDDA_mv;
+void CADC_Calibrate_VDDA(void);
+
+
+/**
+ * @brief 利用校准数据更新ADC校准，必须先调用CADC_Calibrate_VDDA()
+ * @param raw 原始数据
+ * @return 校准后的ADC引脚上的电压值(mV)
+ */
+Float_t CADC_Calibrate_mv(ADC_DMA_Buffer_t raw);
+
 
 /**
  * @brief 启动/停止ADC DMA搬运

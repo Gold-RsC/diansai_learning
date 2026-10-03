@@ -74,3 +74,10 @@ void HAL_ADC_ConvHalfCpltCallback(ADC_HandleTypeDef* hadc) {
         adc_it_callbacks.conv_half_cplt_cbk(hadc);
     }
 }
+Float_t VDDA_mv;
+void CADC_Calibrate_VDDA(void) {
+    VDDA_mv = (Float_t)VREFINT_CAL_VREF * (Float_t)VREFINT_CAL / (Float_t)adc_dma_buffer[VREFINT_RAW_POS];
+}
+Float_t CADC_Calibrate_mv(ADC_DMA_Buffer_t raw) {
+    return (Float_t)raw * VDDA_mv / 4095.0f;
+}
