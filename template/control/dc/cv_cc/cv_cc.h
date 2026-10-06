@@ -10,7 +10,7 @@
 typedef enum {
     CV_CC_MODE_CV,  // 恒压
     CV_CC_MODE_CC,  // 恒流
-} Cv_Cc_Mode_t;
+} CV_CC_Mode_t;
 
 /**
  * @brief CV/CC 双环控制器
@@ -31,61 +31,57 @@ typedef enum {
 typedef struct {
 
     struct {
-        Float_t v_target;  // 恒压目标，单位：V
-        Float_t i_target;  // 恒流目标，单位：A
-
         Float_t switch_margin;  // 模式切换回差，单位：A
 
-        Float_t duty_min;  // 占空比安全下限
-        Float_t duty_max;  // 占空比安全上限
+        Float_t out_min;  // 占空比安全下限
+        Float_t out_max;  // 占空比安全上限
     } param;
 
     struct {
         PI_t voltage_loop;  // 电压环
         PI_t current_loop;  // 电流环
 
-        Cv_Cc_Mode_t mode;  // 当前生效的模式
+        CV_CC_Mode_t mode;  // 当前生效的模式
     } _state;
 
     Float_t out;  // 输出占空比
 
-} Cv_Cc_t;
+} CV_CC_t;
 
 /**
  * @brief 初始化 CV/CC 双环控制器
  *
  * @param controller CV/CC 双环控制器结构体指针
- * @param v_target 恒压目标，单位：V
- * @param i_target 恒流目标，单位：A
  * @param kp_v 电压环比例系数
  * @param ki_v 电压环积分系数
  * @param kp_i 电流环比例系数
  * @param ki_i 电流环积分系数
- * @param duty_min 占空比安全下限
- * @param duty_max 占空比安全上限
  * @param switch_margin 模式切换回差，单位：A
+ * @param out_min 占空比安全下限
+ * @param out_max 占空比安全上限
+ * @param init_value 初始占空比
  *
- * @note 两个 PI 的输出上下限都设为 [duty_min, duty_max]。
+ * @note 两个 PI 的输出上下限都设为 [out_min, out_max]。
  */
-void Cv_Cc_Init(Cv_Cc_t* controller,
-                Float_t v_target,
-                Float_t i_target,
+void CV_CC_Init(CV_CC_t* controller,
                 Float_t kp_v,
                 Float_t ki_v,
                 Float_t kp_i,
                 Float_t ki_i,
-                Float_t duty_min,
-                Float_t duty_max,
-                Float_t switch_margin);
+                Float_t switch_margin,
+                Float_t out_min,
+                Float_t out_max,
+                Float_t init_value);
 
 /**
  * @brief 复位 CV/CC 双环控制器
  *
  * @param controller CV/CC 双环控制器结构体指针
+ * @param init_value 初始占空比
  *
  * @note 返回恒压模式，两个 PI 状态清零。
  */
-void Cv_Cc_Reset(Cv_Cc_t* controller);
+void CV_CC_Reset(CV_CC_t* controller, Float_t init_value);
 
 /**
  * @brief 更新 CV/CC 双环控制器状态
@@ -93,18 +89,11 @@ void Cv_Cc_Reset(Cv_Cc_t* controller);
  * @param controller CV/CC 双环控制器结构体指针
  * @param v_out 实测输出电压，单位：V
  * @param i_out 实测输出电流，单位：A
+ * @param v_target 恒压目标，单位：V
+ * @param i_target 恒流目标，单位：A
  * @return Float_t 占空比
- *
- * @note 需以固定周期调用。可用 Cv_Cc_Get_Mode 查询当前模式。
  */
-Float_t Cv_Cc_Update(Cv_Cc_t* controller, Float_t v_out, Float_t i_out);
+Float_t CV_CC_Update(CV_CC_t* controller, Float_t v_out, Float_t i_out, Float_t v_target, Float_t i_target);
 
-/**
- * @brief 查询当前模式
- *
- * @param controller CV/CC 双环控制器结构体指针
- * @return Cv_Cc_Mode_t 当前生效的模式
- */
-Cv_Cc_Mode_t Cv_Cc_Get_Mode(Cv_Cc_t* controller);
 
 #endif

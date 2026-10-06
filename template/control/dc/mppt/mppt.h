@@ -29,16 +29,16 @@ typedef struct {
     } param;
 
     struct {
-        Float_t duty;       // 当前占空比
-        Float_t direction;  // 上次扰动方向，+1 或 -1
-        Float_t prev_power; // 上次扰动后的功率
+        Float_t duty;        // 当前占空比
+        Float_t direction;   // 上次扰动方向，+1 或 -1
+        Float_t prev_power;  // 上次扰动后的功率
 
         uint32_t count;  // 距上次扰动的拍数
     } _state;
 
     Float_t out;  // 输出占空比
 
-} Mppt_t;
+} MPPT_t;
 
 /**
  * @brief 初始化扰动观察法 MPPT
@@ -52,7 +52,7 @@ typedef struct {
  * @note 扰动周期越短跟踪越快，但过短时功率尚未稳定就开始比较，
  *       容易误判方向。一般取被测功率低通时间常数的 2 ~ 3 倍。
  */
-void Mppt_Init(Mppt_t* controller, Float_t step, Float_t min_duty, Float_t max_duty, uint32_t period);
+void MPPT_Init(MPPT_t* controller, Float_t step, Float_t min_duty, Float_t max_duty, uint32_t period);
 
 /**
  * @brief 复位扰动观察法 MPPT
@@ -61,7 +61,7 @@ void Mppt_Init(Mppt_t* controller, Float_t step, Float_t min_duty, Float_t max_d
  *
  * @note 占空比回到下限，扰动方向设为正向。
  */
-void Mppt_Reset(Mppt_t* controller);
+void MPPT_Reset(MPPT_t* controller);
 
 /**
  * @brief 更新扰动观察法 MPPT 状态
@@ -73,6 +73,6 @@ void Mppt_Reset(Mppt_t* controller);
  *
  * @note 需以固定周期逐点调用，不要在中间跳过调用，否则扰动周期不准确。
  */
-Float_t Mppt_Update(Mppt_t* controller, Float_t v_in, Float_t i_in);
+Float_t MPPT_Update(MPPT_t* controller, Float_t v_in, Float_t i_in);
 
 #endif

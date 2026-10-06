@@ -20,9 +20,9 @@ Float_t PI_Update(PI_t* controller, Float_t now, Float_t target) {
     return controller->out;
 }
 
-void PI_Reset(PI_t* controller) {
+void PI_Reset(PI_t* controller, Float_t init_value) {
     controller->_state.previous_error = 0.0f;
-    controller->out                   = 0.0f;
+    controller->out                   = init_value;
 }
 
 void PI_Set_Output(PI_t* controller, Float_t output) {

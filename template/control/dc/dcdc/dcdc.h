@@ -35,8 +35,8 @@ typedef struct {
     struct {
         Dcdc_Topology_t topology;
 
-        Float_t duty_min;  // 占空比安全下限
-        Float_t duty_max;  // 占空比安全上限
+        Float_t out_min;  // 占空比安全下限
+        Float_t out_max;  // 占空比安全上限
     } param;
 
     Float_t out;  // 最近一次算出的前馈占空比

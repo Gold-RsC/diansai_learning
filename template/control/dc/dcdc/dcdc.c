@@ -2,41 +2,41 @@
 
 void Dcdc_Init(Dcdc_t* controller, Dcdc_Topology_t topology) {
     controller->param.topology = topology;
-    controller->param.duty_min = 0.02f;
+    controller->param.out_min  = 0.02f;
 
     /* Buck 无右半平面零点，上限可放宽；Boost 与 Buck-Boost 有，需留余量 */
-    controller->param.duty_max = (topology == DCDC_BUCK) ? 0.95f : 0.90f;
+    controller->param.out_max = (topology == DCDC_BUCK) ? 0.95f : 0.90f;
 
-    controller->out = controller->param.duty_min;
+    controller->out = controller->param.out_min;
 }
 
 Float_t Dcdc_Feedforward(Dcdc_t* controller, Float_t v_in, Float_t v_target) {
     Float_t duty;
 
     if (v_in <= 0.0f) {
-        controller->out = controller->param.duty_min;
+        controller->out = controller->param.out_min;
         return controller->out;
     }
 
     switch (controller->param.topology) {
-    case DCDC_BUCK:
-        /* Vo = D * Vin  ->  D = Vo / Vin */
-        duty = v_target / v_in;
-        break;
+        case DCDC_BUCK:
+            /* Vo = D * Vin  ->  D = Vo / Vin */
+            duty = v_target / v_in;
+            break;
 
-    case DCDC_BOOST:
-        /* Vo = Vin / (1 - D)  ->  D = 1 - Vin / Vo */
-        duty = 1.0f - v_in / v_target;
-        break;
+        case DCDC_BOOST:
+            /* Vo = Vin / (1 - D)  ->  D = 1 - Vin / Vo */
+            duty = 1.0f - v_in / v_target;
+            break;
 
-    case DCDC_BUCK_BOOST:
-        /* |Vo| = Vin * D / (1 - D)  ->  D = Vo / (Vin + Vo) */
-        duty = v_target / (v_in + v_target);
-        break;
+        case DCDC_BUCK_BOOST:
+            /* |Vo| = Vin * D / (1 - D)  ->  D = Vo / (Vin + Vo) */
+            duty = v_target / (v_in + v_target);
+            break;
 
-    default:
-        duty = controller->param.duty_min;
-        break;
+        default:
+            duty = controller->param.out_min;
+            break;
     }
 
     controller->out = Dcdc_Clamp_Duty(controller, duty);
@@ -45,7 +45,7 @@ Float_t Dcdc_Feedforward(Dcdc_t* controller, Float_t v_in, Float_t v_target) {
 }
 
 Float_t Dcdc_Clamp_Duty(Dcdc_t* controller, Float_t duty) {
-    return clamp(duty, controller->param.duty_min, controller->param.duty_max);
+    return clamp(duty, controller->param.out_min, controller->param.out_max);
 }
 
 Float_t Dcdc_Plant_Gain(Dcdc_t* controller, Float_t v_in, Float_t duty) {

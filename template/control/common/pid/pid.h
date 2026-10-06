@@ -21,9 +21,9 @@ typedef struct {
 } PI_t;
 
 /**
- * @brief 初始化 PID 控制器
+ * @brief 初始化 PI 控制器
  *
- * @param controller PID 控制器 结构体指针
+ * @param controller PI 控制器 结构体指针
  * @param kp Proportional Gain
  * @param ki Integral Gain
  * @param out_min 输出最小值
@@ -33,12 +33,12 @@ typedef struct {
 void PI_Init(PI_t* controller, Float_t kp, Float_t ki, Float_t out_min, Float_t out_max, Float_t init_value);
 
 /**
- * @brief 更新 PID 控制器
+ * @brief 更新 PI 控制器
  *
- * @param controller PID 控制器 结构体指针
+ * @param controller PI 控制器 结构体指针
  * @param now 实际值
  * @param target 目标值
- * @return Float_t PID 输出值
+ * @return Float_t PI 输出值
  */
 Float_t PI_Update(PI_t* controller, Float_t now, Float_t target);
 
@@ -46,11 +46,12 @@ Float_t PI_Update(PI_t* controller, Float_t now, Float_t target);
  * @brief 复位 PI 控制器
  *
  * @param controller PI 控制器 结构体指针
+ * @param init_value 初始输出值
  *
  * @note 清零误差历史与输出。用于启动、模式切换、故障恢复，
  *       避免上一阶段遗留的 previous_error 造成首拍冲击。
  */
-void PI_Reset(PI_t* controller);
+void PI_Reset(PI_t* controller, Float_t init_value);
 
 /**
  * @brief 直接设定 PI 输出

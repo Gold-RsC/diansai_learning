@@ -7,6 +7,8 @@
 #include <stdio.h>
 #include <math.h>
 
+#define unused(x) (void)(x)
+
 typedef float Float_t;
 
 #ifndef MATH_PI
