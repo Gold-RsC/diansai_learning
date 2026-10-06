@@ -11,9 +11,10 @@ void SPWM_Init(SPWM_t* controller,
     controller->param.target_rms_voltage = target_rms_voltage;
     controller->param.max_amplitude      = 0.8f;
 
-    Sin_Analyzer_Init(&controller->_state.sin_analyzer, target_freq, 0, 1000);
+    Sin_Analyzer_Init(&controller->_state.sin_analyzer, pwm_freq, 0, 1000);
 
-    PI_Init(&controller->_state.pi_controller, 0.08f, 0.01f, 0.3f, 0.3f);
+    /* PI 输出直接作为调制比，初值取 0.8（与开环起始值一致） */
+    PI_Init(&controller->_state.pi_controller, 0.01f, 0.02f, 0.02f, 0.98f, 0.8f);
 
     controller->_state.phase_accumulator = 0.0f;
     controller->_state.phase_increment   = 2.0f * MATH_PI * target_freq / pwm_freq;
@@ -35,11 +36,11 @@ Float_t SPWM_Update(SPWM_t* controller, Float_t voltage_sample, Float_t current_
     Sin_Analyzer_Update(&controller->_state.sin_analyzer, voltage_sample, current_sample);
 
     if (controller->_state.sin_analyzer.out.data_ready) {
-        Float_t pid_out = PI_Update(
-            &controller->_state.pi_controller, controller->_state.sin_analyzer.out.rms_voltage, controller->param.target_rms_voltage);
+        /* PI 输出即调制比本身，限幅已在 PI 内部完成 */
+        controller->param.max_amplitude = PI_Update(&controller->_state.pi_controller,
+                                                    controller->_state.sin_analyzer.out.rms_voltage,
+                                                    controller->param.target_rms_voltage);
 
-        Float_t new_amplitude                      = pid_out + controller->param.max_amplitude;
-        controller->param.max_amplitude                = clamp(new_amplitude, 0.02f, 0.98f);
         controller->_state.sin_analyzer.out.data_ready = false;
     }
 
@@ -74,11 +75,10 @@ Float_t SPWM_PLL_Update(SPWM_PLL_t* controller, Float_t grid_voltage, Float_t vo
 
     // 闭环分析
     if (controller->spwm._state.sin_analyzer.out.data_ready) {
-        Float_t pid_out                      = PI_Update(&controller->spwm._state.pi_controller,
-                                                       controller->spwm._state.sin_analyzer.out.rms_voltage,
-                                                       controller->spwm.param.target_rms_voltage);
-        Float_t new_amplitude                = pid_out + controller->spwm.param.max_amplitude;
-        controller->spwm.param.max_amplitude = clamp(new_amplitude, 0.02f, 0.98f);
+        /* PI 输出即调制比本身，限幅已在 PI 内部完成 */
+        controller->spwm.param.max_amplitude = PI_Update(&controller->spwm._state.pi_controller,
+                                                         controller->spwm._state.sin_analyzer.out.rms_voltage,
+                                                         controller->spwm.param.target_rms_voltage);
         controller->spwm._state.sin_analyzer.out.data_ready = false;
     }
 
