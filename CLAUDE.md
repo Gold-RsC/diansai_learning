@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **电赛电源方向的软件学习项目。** 用 2023 年电赛 A 题（单相逆变器并联运行系统）作为载体，把逆变器软件涉及的算法逐个写成独立的、可复用的 C 模块，供备赛时按需取用。
 
-`template/` 是**模块化的算法模板，不是可直接烧录的固件**：没有构建系统、没有 HAL 配置、没有 `main.c`。`print_adapt` 依赖的 `huart4` 与 `HAL_UART_*` 来自外部 STM32 工程，不在此仓库内。学习重点在算法实现与模块接口设计，不在工程集成。
+`template/` 是**模块化的算法模板，不是可直接烧录的固件**：没有构建系统、没有 HAL 配置、没有 `main.c`。`driver/` 与 `print_adapt` 依赖外部 STM32 工程的 HAL（`stm32g4xx_hal.h`、CubeMX 生成的 `hrtim.h` / `adc.h`、`huart4`），这些都不在此仓库内。学习重点在算法实现与模块接口设计，不在工程集成。
 
 `docs/` 是原理笔记（SPWM、单极性/双极性对比、题目资料）。`template/filter/harmonic/谐波抑制滤波器.md` 是该模块的完整数学推导，文档与代码同放。
 
@@ -14,6 +14,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ```
 mbase/          基础类型与宏，所有模块的根依赖
+driver/         MCU 外设驱动封装 —— hrtim / adc（依赖具体芯片的 HAL）
 dsp/            通用 DSP 原语 —— notch / goertzel / lpf
 filter/         通用滤波器 —— harmonic / kalman / sliding
 control/
@@ -39,7 +40,7 @@ debug/          调试输出与上位机 —— print_adapt / vofa
 
 两个值得注意的设计：
 
-- `max_amplitude` 既是调制比又是 PI 的积分输出——`PI_Update` 的输出直接加在它上面再限幅回 `[0.02, 0.98]`。PI 的 `out_min/out_max` 因此设成对称的 `±0.3`，是"增量"而非绝对量。
+- `max_amplitude` 就是调制比本身：`SPWM_Update` / `SPWM_PLL_Update` 把 `PI_Update` 的返回值**直接赋给**它，限幅在 PI 内部按 `[0.02, 0.98]` 完成，`PI_Init` 的 `init_value` 取 0.8（与开环起始调制比一致）。**电压环 PI 的增益量纲是「调制比 / V」**，数值必须远小于把它当增量用时的取值——实测 `kp = 0.08` 会让调制比在 0.02 与 0.98 之间满幅打摆，现在取 `kp = 0.01`、`ki = 0.02`。`kp` 项作用于 `(e − e_prev)` 本质是微分，而 `Sin_Analyzer` 的窗口是整整一个工频周期，测量滞后大，所以 `kp` 一超过 `1/P`（P = 被控对象「Vrms / 调制比」增益）闭环必发散。
 - `filter/`（harmonic、kalman、sliding）**当前零调用点**。它们曾经由一层 `Filter_t`（kalman→harmonic 级联）聚合，那层已在 `efb036b` 删除。
 
 ## 代码规范
@@ -73,6 +74,7 @@ debug/          调试输出与上位机 —— print_adapt / vofa
 
 ```bash
 INC="-Itemplate/mbase \
+     -Itemplate/driver/hrtim -Itemplate/driver/adc \
      -Itemplate/dsp/notch -Itemplate/dsp/goertzel -Itemplate/dsp/lpf \
      -Itemplate/filter/harmonic -Itemplate/filter/kalman -Itemplate/filter/sliding \
      -Itemplate/control/common/pid -Itemplate/control/common/soft_start -Itemplate/control/common/protect \
@@ -80,7 +82,8 @@ INC="-Itemplate/mbase \
      -Itemplate/control/ac/pr -Itemplate/control/ac/droop -Itemplate/control/ac/spwm \
      -Itemplate/measure/dc/dc_meter \
      -Itemplate/measure/ac/sin_analyzer -Itemplate/measure/ac/spll -Itemplate/measure/ac/thd \
-     -Itemplate/debug/print_adapt -Itemplate/debug/vofa"
+     -Itemplate/debug/print_adapt -Itemplate/debug/vofa \
+     -Itmp/stub"                     # HAL 桩目录，见下
 for f in $(find template -name '*.c'); do
   gcc -fsyntax-only -std=gnu11 -Wall -Wextra -Werror=implicit-function-declaration $INC "$f"
 done
@@ -88,11 +91,24 @@ done
 
 - `-std=gnu11` 必需：`debug/vofa/vofa.h` 用了 GNU 的 `##__VA_ARGS__` 扩展。
 - `-Werror=implicit-function-declaration` 是价值最高的一个标志：漏改调用点在 gcc 里默认只是 warning，会"编译通过"但在 ARM 上静默返回垃圾值。
-- `debug/print_adapt/print_adapt.c` 在仓库外无法单独编译（缺 `huart4` 与 `HAL_UART_*`），需自建最小桩。
+- 这套 `-I` 齐全时 **24 个 `.c` 全部干净通过**（零 warning）。
 
-**`harmonic.h` 依赖 `template/dsp/notch` 在 include 路径上。** 仓库内没有消费者所以编译测试抓不到这条，集成到 Keil 工程时必须补上。
+**`-Itmp/stub` 是必需的**（`tmp/` 在 `.gitignore` 里，桩不在仓库内）。3 个头文件直接 `#include "stm32g4xx_hal.h"`：`driver/hrtim/config_hrtim.h`、`driver/adc/config_adc.h`、`debug/print_adapt/print_adapt.h`；牵连 4 个 `.c`（`config_hrtim.c`、`config_adc.c`、`print_adapt.c`，以及经 `vofa.h → print_adapt.h` 的 `vofa.c`）。此外 `config_hrtim.h` 还要 CubeMX 生成的 `"hrtim.h"`、`config_adc.h` 还要 `"adc.h"`。缺了这三个头，整棵树会停在 `fatal error: stm32g4xx_hal.h: No such file or directory`，24 个 `.c` 里 4 个编不过。
 
-## 已知问题
+桩只需**符号名与真实 HAL 对齐**，字段布局不必真实：
 
-- `control/spwm/spwm.c` 的 `SPWM_PLL_Update` 中，失锁保护写作 `if (diff(spll->out.fo, GRID_FREQUENCY) < 0.01f) return 0.5f;`——条件是 `fo` **接近** 50Hz 时返回直通占空比，方向疑似写反（应为 `>`，即失锁时才旁路）。
-- `filter/sliding/sliding.c` 的 `out` 同时充当递推累加器与对外输出，且被 `clamp` 截断。递推要求累加器未截断，因此输入一旦越出 `[out_min, out_max]` 范围，滤波器会卡在限幅值无法恢复。信号始终在范围内时不会触发。
+- 句柄：`HRTIM_HandleTypeDef`、`ADC_HandleTypeDef`、`UART_HandleTypeDef`，以及 `hhrtim1` / `hadc1..5` / `huart4`。
+- 函数：`HAL_HRTIM_WaveformCountStart`（**不是** `CounterStart`）、`HAL_HRTIM_WaveformOutputStart`、`HAL_ADCEx_Calibration_Start(hadc, SingleDiff)`（G4 上是**两参数**）、`HAL_ADC_Start_DMA` / `HAL_ADC_Stop_DMA`、`HAL_UART_Transmit{,_DMA,_IT}`。
+- 宏：`__HAL_HRTIM_SETCOMPARE`（**没有** `HAL_HRTIM_WaveformSetCompare` 这个函数）、`__HAL_HRTIM_MASTER_{ENABLE,DISABLE}_IT`、`__HAL_HRTIM_TIMER_{ENABLE,DISABLE}_IT`，以及 `HRTIM_TIMERID_*` / `HRTIM_OUTPUT_T*` / `HRTIM_MDIER_*` / `HRTIM_TIM_IT_*` / `HRTIM_COMPAREUNIT_*` / `HRTIM_TIMERINDEX_*` 枚举与 `ADC_SINGLE_ENDED`、`VREFINT_CAL_ADDR`、`VREFINT_CAL_VREF`。
+- 桩里的 `__HAL_*` 宏写成 `((void)(...), ...)` 丢弃参数即可——它们只用来让仓库自身的代码通过语法检查，不校验 HAL 内部实现。
+
+**`harmonic.h` 依赖 `template/dsp/notch` 在 include 路径上。** 上面这套 `-I` 已经带上；集成到 Keil 工程时必须同样补上。
+
+## 问题记录：写进 `Issues.md`
+
+发现的问题**不要自己动手改**，写进仓库根的 `Issues.md`，由用户自己修。
+
+- 一条一个问题，**三行内说清**：在哪（`文件` 或 `文件:行`）、什么现象、怎么改。
+- 只写仍然存在的。改掉的直接删，不留 changelog、不留"已修复"记录。
+- `Issues.md` 是待修问题的唯一事实来源，本节不再另列清单。
+- **改代码前先读 `Issues.md`**，免得把已知问题当成正常行为、或在不知情下重新引入。

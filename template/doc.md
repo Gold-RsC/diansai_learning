@@ -156,10 +156,20 @@ void CADC_Start_DMA(void);
 void CADC_Stop_DMA(void);
 
 void ADC_IT_Callbacks_Register(ADC_IT_Callbacks_t* adc_it_callbacks);
+
+/* VDDA 实测校准：用片内 VREFINT 反推实际 VDDA，不依赖 3.3V 标称值 */
+extern Float_t VDDA_mv;
+void    CADC_Calibrate_VDDA(void);                    // 由 VREFINT 原始码值算 VDDA（mV）
+Float_t CADC_Calibrate_mv(ADC_DMA_Buffer_t raw);      // 原始码值 -> 引脚电压（mV）
 ```
 
 `ADC_IT_Callbacks_t` 两个成员：`conv_cplt_cbk`、`conv_half_cplt_cbk`，
 未注册会被判空跳过。
+
+`VREFINT_RAW_POS` 指定 VREFINT 在本 ADC DMA 缓冲中的下标，默认 0（即
+CubeMX 里把 Vrefint 排在 Rank 1）。`CADC_Calibrate_VDDA` 必须在 DMA 已经
+循环跑起来、缓冲里已有一次完整转换之后调用，之后 `CADC_Calibrate_mv`
+才有意义。
 
 **CubeMX 侧：连续转换要关掉、触发源选 HRTIM 的 ADC 触发事件，配置项注释在
 `config_adc.h` 顶部。**
@@ -248,11 +258,15 @@ Float_t Sliding_Filter_Update(Sliding_Filter_t* filter, Float_t measurement);
 `PI_Reset` 用于启动与故障恢复，`PI_Set_Output` 供多环无扰切换。
 
 ```c
-void    PI_Init(PI_t* controller, Float_t kp, Float_t ki, Float_t out_min, Float_t out_max);
+void    PI_Init(PI_t* controller, Float_t kp, Float_t ki, Float_t out_min, Float_t out_max,
+                Float_t init_value);
 Float_t PI_Update(PI_t* controller, Float_t now, Float_t target);
-void    PI_Reset(PI_t* controller);
+void    PI_Reset(PI_t* controller, Float_t init_value);
 void    PI_Set_Output(PI_t* controller, Float_t output);
 ```
+
+`init_value` 是输出初值，也是 `PI_Reset` 的复位值。增量式的 `out` 是累加器，
+从 0 起会有一段爬升过程；有前馈时把工作点占空比传进来，可以省掉这段暂态。
 
 ## control/common/soft_start
 
@@ -299,23 +313,28 @@ CV/CC 双环控制器。两环同时运行，带切换回差；闲置环跟踪�
 切换瞬间占空比不跳变。
 
 ```c
-void    Cv_Cc_Init(Cv_Cc_t* controller, Float_t v_target, Float_t i_target,
-                   Float_t kp_v, Float_t ki_v, Float_t kp_i, Float_t ki_i,
-                   Float_t duty_min, Float_t duty_max, Float_t switch_margin);
-void    Cv_Cc_Reset(Cv_Cc_t* controller);
-Float_t Cv_Cc_Update(Cv_Cc_t* controller, Float_t v_out, Float_t i_out);
-Cv_Cc_Mode_t Cv_Cc_Get_Mode(Cv_Cc_t* controller);
+typedef enum { CV_CC_MODE_CV, CV_CC_MODE_CC } CV_CC_Mode_t;
+
+void    CV_CC_Init(CV_CC_t* controller, Float_t kp_v, Float_t ki_v,
+                   Float_t kp_i, Float_t ki_i, Float_t switch_margin,
+                   Float_t out_min, Float_t out_max, Float_t init_value);
+void    CV_CC_Reset(CV_CC_t* controller, Float_t init_value);
+Float_t CV_CC_Update(CV_CC_t* controller, Float_t v_out, Float_t i_out,
+                     Float_t v_target, Float_t i_target);
 ```
+
+**目标值是 `Update` 的入参，不在 `param` 里**——所以运行中可以随时改充电电压/限流值，
+不必重新 `Init`。当前模式读 `controller->_state.mode`。
 
 ## control/dc/mppt
 
 扰动观察法 MPPT。功率上升则保持扰动方向，下降则反向。
 
 ```c
-void    Mppt_Init(Mppt_t* controller, Float_t step, Float_t min_duty, Float_t max_duty,
+void    MPPT_Init(MPPT_t* controller, Float_t step, Float_t min_duty, Float_t max_duty,
                   uint32_t period);
-void    Mppt_Reset(Mppt_t* controller);
-Float_t Mppt_Update(Mppt_t* controller, Float_t v_in, Float_t i_in);
+void    MPPT_Reset(MPPT_t* controller);
+Float_t MPPT_Update(MPPT_t* controller, Float_t v_in, Float_t i_in);
 ```
 
 输入电压/电流应先经低通滤波，否则功率比较会被噪声翻转。
@@ -360,10 +379,27 @@ Float_t SPWM_Update_Open(SPWM_t* controller);
 Float_t SPWM_Update(SPWM_t* controller, Float_t voltage_sample, Float_t current_sample);
 
 void    SPWM_PLL_Init(SPWM_PLL_t* controller, Float_t pwm_freq, Float_t target_freq,
-                      Float_t target_rms_voltage, SPLL_1ph_Sogi_t* analyzer);
+                      Float_t target_rms_voltage, SPLL_1ph_Sogi_t* spll);
 Float_t SPWM_PLL_Update(SPWM_PLL_t* controller, Float_t grid_voltage,
                         Float_t voltage_sample, Float_t current_sample);
 ```
+
+**`SPWM_Update_Open` 必须按 `pwm_freq` 的节奏调用**（PWM 中断里），它靠相位
+累加器推进，每次调用走一个 PWM 周期。
+
+闭环的电压环是**绝对量**结构：`PI_Update` 的返回值直接赋给
+`param.max_amplitude`，也就是调制比本身，限幅在 PI 内部按 `[0.02, 0.98]` 完成。
+
+- `PI_Init` 的 `init_value` 取 0.8，与开环起始调制比一致，省掉启动爬升。
+- 因为 PI 输出是绝对调制比而非增量，**增益的量纲是「调制比 / V」**，数值必须
+  远小于电压环当增量用时的取值。当前取 `kp = 0.01`、`ki = 0.02`。
+- `kp` 项作用于 `(e - e_prev)`，本质是微分；而 `Sin_Analyzer` 的窗口是整整一个
+  工频周期，测量滞后很大。`kp` 一旦超过 `1/P`（P 为被控对象「Vrms / 调制比」
+  的增益），闭环必发散——实测 `kp = 0.08` 时调制比会在 0.02 与 0.98 之间满幅打摆。
+
+`SPWM_Init` 里传给 `Sin_Analyzer_Init` 的是 **`pwm_freq`（采样率）**，不是
+`target_freq`：分析器按 `freq = measure_freq / (2N)` 反推信号频率，传错会让
+`out.freq` 恒为 0.125 而不是 50。
 
 ## measure/dc/dc_meter
 
