@@ -17,6 +17,8 @@ uint8_t uart_out_buffer[UART_OUT_BUFFER_SIZE];
 
 
 int fputc(int ch, FILE* f) {
+    unused(f);
+
     uint32_t temp = ch;
     HAL_UART_Transmit(UART_ADDR, (uint8_t*)&temp, 1, 0xFFFFFFFF);
     return ch;

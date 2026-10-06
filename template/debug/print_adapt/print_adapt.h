@@ -2,6 +2,7 @@
 #define __PRINT_ADAPT_H__
 
 #include "mbase.h"
+#include "stm32g4xx_hal.h"
 #include "stdarg.h"
 
 /**
