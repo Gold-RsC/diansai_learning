@@ -1,14 +1,19 @@
+/**
+ * @note 记得打开uart的DMA和NVIC
+ */
+
 #ifndef __PRINT_ADAPT_H__
 #define __PRINT_ADAPT_H__
 
 #include "mbase.h"
 #include "stm32g4xx_hal.h"
 #include "stdarg.h"
+#include "usart.h"
 
 /**
  * @brief UART地址
  */
-#define UART_ADDR (&huart4)
+#define UART_ADDR (&huart5)
 
 
 /**
