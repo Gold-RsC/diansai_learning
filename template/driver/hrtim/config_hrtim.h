@@ -64,7 +64,7 @@
 #define CHRTIM_Timer_Start(hrtim_timerid) HAL_HRTIM_WaveformCountStart(HRTIM_HANDLER, hrtim_timerid)
 
 /**
- * @brief 启动HRTIM输出
+ * @brief 启动/停止指定HRTIM输出
  * @param hrtim_output_identifier 输出标识符, 可以用"|"拼接
  *     @arg HRTIM_OUTPUT_TA1
  *     @arg HRTIM_OUTPUT_TA2
@@ -81,7 +81,7 @@
  */
 #define CHRTIM_Output_Start(hrtim_output_identifier)                                                                   \
     HAL_HRTIM_WaveformOutputStart(HRTIM_HANDLER, hrtim_output_identifier)
-
+#define CHRTIM_Output_Stop(hrtim_output_identifier) HAL_HRTIM_WaveformOutputStop(HRTIM_HANDLER, hrtim_output_identifier)
 /**
  * @brief 启用/禁用HRTIM Master Timer中断
  * @param hrtim_master_interrupt_register 主定时器中断使能寄存器值, 可以用"|"拼接
