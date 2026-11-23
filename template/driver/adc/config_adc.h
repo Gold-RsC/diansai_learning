@@ -8,7 +8,7 @@
  *   - Vrefint Channel [*]
  * 2. Pinout & Configuration -> ADC1 -> Configuration -> Parameter Settings
  *   - ADC_Settings
- *     - Continuous Conversion Mode: disabled
+ *     - DMA Continuous Requests: enabled
  *   - ADC_Regular_ConversionMode
  *     - Number of Conversion: n
  *     - Rank 1
@@ -39,11 +39,13 @@
  *     - Update Trigger Source: Master Timer
  *     - Trigger Sources Selection: 1
  *       - 1st Trigger Source: master compare 3
+ * 6.NVIC 注意几个DMA的抢占优先级需一致，否则会竞态
  */
 #ifndef __CONFIG_ADC_H__
 #define __CONFIG_ADC_H__
 
 #include "mbase.h"
+#include "stm32g474xx.h"
 #include "stm32g4xx_hal.h"
 #include "adc.h"
 
@@ -132,7 +134,7 @@ void CADC_Stop_DMA(void);
 /**
  * @brief ADC中断回调函数类型
  */
-typedef void (*ADC_IT_cbk)(ADC_HandleTypeDef* hadc);
+typedef void (*ADC_IT_cbk)(void);
 
 typedef struct {
     ADC_IT_cbk conv_cplt_cbk;

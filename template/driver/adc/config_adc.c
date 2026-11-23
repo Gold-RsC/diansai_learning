@@ -59,6 +59,27 @@ void CADC_Stop_DMA(void) {
 
 static ADC_IT_Callbacks_t adc_it_callbacks;
 
+#define __ADC_CALLBACK_TRIGGER_MASK(adcidx) (1 << (adcidx - 1))
+
+#define __ALL_ADC_CALLBACK_TRIGGER_MASK                                                                                \
+    ((ADC1_CHANNEL_NUM > 0 ? __ADC_CALLBACK_TRIGGER_MASK(1) : 0) |                                                     \
+     (ADC2_CHANNEL_NUM > 0 ? __ADC_CALLBACK_TRIGGER_MASK(2) : 0) |                                                     \
+     (ADC3_CHANNEL_NUM > 0 ? __ADC_CALLBACK_TRIGGER_MASK(3) : 0) |                                                     \
+     (ADC4_CHANNEL_NUM > 0 ? __ADC_CALLBACK_TRIGGER_MASK(4) : 0) |                                                     \
+     (ADC5_CHANNEL_NUM > 0 ? __ADC_CALLBACK_TRIGGER_MASK(5) : 0))
+
+
+uint8_t adc_conv_callback_trigger      = 0;
+uint8_t adc_conv_half_callback_trigger = 0;
+
+#define ADC_HANDLETYPEDEF_TO_ADCIDX(hadc)                                                                              \
+    ((hadc)->Instance == ADC1   ? 1                                                                                    \
+     : (hadc)->Instance == ADC2 ? 2                                                                                    \
+     : (hadc)->Instance == ADC3 ? 3                                                                                    \
+     : (hadc)->Instance == ADC4 ? 4                                                                                    \
+     : (hadc)->Instance == ADC5 ? 5                                                                                    \
+                                : -1)
+
 void ADC_IT_Callbacks_Register(ADC_IT_Callbacks_t* _cbks) {
     if (_cbks) {
         adc_it_callbacks = *_cbks;
@@ -66,12 +87,26 @@ void ADC_IT_Callbacks_Register(ADC_IT_Callbacks_t* _cbks) {
 }
 void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc) {
     if (adc_it_callbacks.conv_cplt_cbk) {
-        adc_it_callbacks.conv_cplt_cbk(hadc);
+        uint8_t adcidx = ADC_HANDLETYPEDEF_TO_ADCIDX(hadc);
+        if (adcidx > 0) {
+            adc_conv_callback_trigger |= __ADC_CALLBACK_TRIGGER_MASK(adcidx);
+        }
+        if (adc_conv_callback_trigger == __ALL_ADC_CALLBACK_TRIGGER_MASK) {
+            adc_conv_callback_trigger = 0;
+            adc_it_callbacks.conv_cplt_cbk();
+        }
     }
 }
 void HAL_ADC_ConvHalfCpltCallback(ADC_HandleTypeDef* hadc) {
     if (adc_it_callbacks.conv_half_cplt_cbk) {
-        adc_it_callbacks.conv_half_cplt_cbk(hadc);
+        uint8_t adcidx = ADC_HANDLETYPEDEF_TO_ADCIDX(hadc);
+        if (adcidx > 0) {
+            adc_conv_half_callback_trigger |= __ADC_CALLBACK_TRIGGER_MASK(adcidx);
+        }
+        if (adc_conv_half_callback_trigger == __ALL_ADC_CALLBACK_TRIGGER_MASK) {
+            adc_conv_half_callback_trigger = 0;
+            adc_it_callbacks.conv_half_cplt_cbk();
+        }
     }
 }
 Float_t VDDA_mv;
