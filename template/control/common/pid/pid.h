@@ -13,11 +13,11 @@ typedef struct {
         Float_t out_max;
     } param;
 
-    Float_t out;
-
     struct {
         Float_t previous_error;
     } _state;
+
+    Float_t out;
 } PI_t;
 
 /**

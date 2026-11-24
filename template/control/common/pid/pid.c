@@ -1,11 +1,15 @@
 #include "pid.h"
 
 void PI_Init(PI_t* controller, Float_t kp, Float_t ki, Float_t out_min, Float_t out_max, Float_t init_value) {
+    memset(controller, 0, sizeof(*controller));
+
     controller->param.kp      = kp;
     controller->param.ki      = ki;
     controller->param.out_min = out_min;
     controller->param.out_max = out_max;
-    controller->out           = init_value;
+
+    /* 初始化历史误差与输出，避免第一次 PI_Update 的微分项受未初始化数据影响 */
+    PI_Reset(controller, init_value);
 }
 
 Float_t PI_Update(PI_t* controller, Float_t now, Float_t target) {
