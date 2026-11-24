@@ -1,13 +1,16 @@
 #include "pr.h"
 
-void Pr_Init(Pr_t* controller,
+void PR_Init(PR_t* controller,
              Float_t kp,
              Float_t kr,
              Float_t resonant_freq,
              Float_t bandwidth,
              Float_t sample_freq,
              Float_t out_min,
-             Float_t out_max) {
+             Float_t out_max,
+             Float_t init_value) {
+    memset(controller, 0, sizeof(*controller));
+
     controller->param.kp = kp;
     controller->param.kr = kr;
 
@@ -29,20 +32,22 @@ void Pr_Init(Pr_t* controller,
     controller->_state.a1 = 2.0f * (controller->param.w0 * controller->param.w0 - k * k) * inv_a0;
     controller->_state.a2 = (k * k - 2.0f * controller->param.wc * k + controller->param.w0 * controller->param.w0) * inv_a0;
 
-    Pr_Reset(controller);
+    PR_Reset(controller, init_value);
 }
 
-void Pr_Reset(Pr_t* controller) {
+void PR_Reset(PR_t* controller, Float_t init_value) {
     controller->_state.e1 = 0.0f;
     controller->_state.e2 = 0.0f;
 
     controller->_state.r1 = 0.0f;
     controller->_state.r2 = 0.0f;
 
-    controller->out = 0.0f;
+    controller->out = init_value;
 }
 
-Float_t Pr_Update(Pr_t* controller, Float_t error) {
+Float_t PR_Update(PR_t* controller, Float_t now, Float_t target) {
+    Float_t error = target - now;
+
     /* Ð³ÕñÍ¨Â· r[n] = b0*e[n] + b2*e[n-2] - a1*r[n-1] - a2*r[n-2] */
     Float_t resonance = controller->_state.b0 * error + controller->_state.b2 * controller->_state.e2
                         - controller->_state.a1 * controller->_state.r1 - controller->_state.a2 * controller->_state.r2;
@@ -56,4 +61,8 @@ Float_t Pr_Update(Pr_t* controller, Float_t error) {
     controller->out = clamp(controller->param.kp * error + resonance, controller->param.out_min, controller->param.out_max);
 
     return controller->out;
+}
+
+void PR_Set_Output(PR_t* controller, Float_t output) {
+    controller->out = clamp(output, controller->param.out_min, controller->param.out_max);
 }
