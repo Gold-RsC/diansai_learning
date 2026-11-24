@@ -19,6 +19,10 @@ typedef float Float_t;
 #define GRID_FREQUENCY 50.0f
 #endif
 
+#ifndef numof
+#define numof(x) (sizeof(x) / sizeof(x[0]))
+#endif
+
 #ifndef min
 #define min(x, y) ((x) < (y) ? (x) : (y))
 #endif
