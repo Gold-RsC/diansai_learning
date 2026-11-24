@@ -3,8 +3,8 @@
 void SPLL_1Ph_Sogi_Init(SPLL_1ph_Sogi_t* analyzer,
                         Float_t grid_freq,
                         Float_t isr_freq,
-                        Float_t lpf_b0,
-                        Float_t lpf_b1)
+                        Float_t omega_n,
+                        Float_t zeta)
 {
     // 清零整个结构体，避免未初始化数据干扰
     memset(analyzer, 0, sizeof(SPLL_1ph_Sogi_t));
@@ -12,13 +12,13 @@ void SPLL_1Ph_Sogi_Init(SPLL_1ph_Sogi_t* analyzer,
     // 保存用户配置参数
     analyzer->param.grid_freq = grid_freq;
     analyzer->param.isr_freq  = isr_freq;
-    analyzer->param.lpf_b0    = lpf_b0;
-    analyzer->param.lpf_b1    = lpf_b1;
+    analyzer->param.omega_n   = omega_n;
+    analyzer->param.zeta      = zeta;
 
     // 计算采样时间间隔
     analyzer->_state.delta_t = 1.0f / isr_freq;
 
-    // 计算 SOGI 内部系数
+    // 计算 SOGI 与环路滤波器内部系数
     SPLL_1Ph_Sogi_Coeff_Calc(analyzer);
 }
 
@@ -42,7 +42,7 @@ void SPLL_1Ph_Sogi_Reset(SPLL_1ph_Sogi_t* analyzer)
     // 清零环路滤波器数据
     analyzer->_state.ylf[0]    = 0.0f;
     analyzer->_state.ylf[1]    = 0.0f;
-    analyzer->_state.u_Q_prev  = 0.0f;
+    analyzer->_state.err_prev  = 0.0f;
 
     // 清零输出量
     analyzer->out.fo     = 0.0f;
@@ -86,6 +86,15 @@ void SPLL_1Ph_Sogi_Coeff_Calc(SPLL_1ph_Sogi_t* analyzer)
     analyzer->_state.osg_qb0 = (0.5f * analyzer->_state.osg_y) * temp;
     analyzer->_state.osg_qb1 = analyzer->_state.osg_qb0 * 2.0f;
     analyzer->_state.osg_qb2 = analyzer->_state.osg_qb0;
+
+    // 环路滤波器整定：二阶系统，误差已按幅值归一化
+    // kp = 2*zeta*omega_n/(2*pi)，ki = omega_n^2/(2*pi)
+    // 离散形式 Ylf(z) = (b0 + b1*z^-1)/(1 - z^-1)，其中 b0 = kp + ki*Ts，b1 = -kp
+    Float_t kp = 2.0f * analyzer->param.zeta * analyzer->param.omega_n / (2.0f * MATH_PI);
+    Float_t ki = analyzer->param.omega_n * analyzer->param.omega_n / (2.0f * MATH_PI);
+
+    analyzer->_state.lpf_b0 = kp + ki * analyzer->_state.delta_t;
+    analyzer->_state.lpf_b1 = -kp;
 }
 
 void SPLL_1Ph_Sogi_Update(SPLL_1ph_Sogi_t* analyzer, Float_t ac_voltage)
@@ -139,22 +148,31 @@ void SPLL_1Ph_Sogi_Update(SPLL_1ph_Sogi_t* analyzer, Float_t ac_voltage)
                   - analyzer->out.sine   * analyzer->_state.osg_u[0];
 
     // -------------------------------------------------------------------------
-    // 步骤 4：环路滤波器（一阶 IIR 低通滤波器）
+    // 步骤 4：归一化相位误差
     // -------------------------------------------------------------------------
-    // 对 Q 轴误差信号 u_Q 进行低通滤波，滤除二次谐波分量
+    // u_Q = A*sin(θ-θref)，u_D = -A*cos(θ-θref)
+    // err = u_Q / sqrt(u_Q^2 + u_D^2) = sin(θ-θref)，与输入幅值无关
+
+    Float_t mag = sqrtf(analyzer->out.u_Q * analyzer->out.u_Q
+                      + analyzer->out.u_D * analyzer->out.u_D);
+    Float_t err = (mag > 1e-6f) ? (analyzer->out.u_Q / mag) : 0.0f;
+
+    // -------------------------------------------------------------------------
+    // 步骤 5：环路滤波器（PI 型）
+    // -------------------------------------------------------------------------
     // 传递函数：Ylf(z) = (b0 + b1*z^-1) / (1 - z^-1)
-    // 此为比例积分（PI）型环路滤波器的简化形式
+    // b0 = kp + ki*Ts，b1 = -kp，err 已归一化
 
     analyzer->_state.ylf[0] = analyzer->_state.ylf[1]
-                        + analyzer->param.lpf_b0 * analyzer->out.u_Q
-                        + analyzer->param.lpf_b1 * analyzer->_state.u_Q_prev;
+                        + analyzer->_state.lpf_b0 * err
+                        + analyzer->_state.lpf_b1 * analyzer->_state.err_prev;
 
     // 更新环路滤波器历史值
     analyzer->_state.ylf[1]   = analyzer->_state.ylf[0];
-    analyzer->_state.u_Q_prev = analyzer->out.u_Q;
+    analyzer->_state.err_prev = err;
 
     // -------------------------------------------------------------------------
-    // 步骤 5：VCO 压控振荡器
+    // 步骤 6：VCO 压控振荡器
     // -------------------------------------------------------------------------
     // 将环路滤波器输出叠加到额定频率上，得到实际输出频率
     // 对频率积分得到相位角，并计算对应的正弦和余弦值

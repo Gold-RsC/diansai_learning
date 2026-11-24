@@ -8,13 +8,18 @@
  *
  * @details 基于二阶广义积分器(Second Order Generalized Integrator, SOGI)
  *          的正交信号发生器，结合 Park 变换与环路滤波器实现单相电网锁相。
+ *
+ *          环路滤波器把 q 轴误差按输入幅值归一化后再积分，因此环路增益
+ *          与输入幅值无关；参数按二阶系统整定：
+ *              kp = 2*zeta*omega_n / (2*pi)
+ *              ki = omega_n^2 / (2*pi)
  */
 typedef struct {
     struct {
         Float_t grid_freq;   // 电网额定频率，单位：Hz
         Float_t isr_freq;    // ISR 调用频率（即控制周期频率），单位：Hz
-        Float_t lpf_b0;      // 环路滤波器系数 b0
-        Float_t lpf_b1;      // 环路滤波器系数 b1
+        Float_t omega_n;     // 环路自然频率，单位：rad/s
+        Float_t zeta;        // 环路阻尼比，通常取 0.707
     } param;
 
     struct {
@@ -22,8 +27,8 @@ typedef struct {
         Float_t theta;       // 输出相位角，单位：rad，范围 [0, 2π)
         Float_t sine;        // 相位角正弦值
         Float_t cosine;      // 相位角余弦值
-        Float_t u_Q;         // Q轴电压分量（误差信号，理想锁定时为0）
-        Float_t u_D;         // D轴电压分量
+        Float_t u_Q;         // Q轴电压分量原始值，单位：V（理想锁定时为0）
+        Float_t u_D;         // D轴电压分量原始值，单位：V（锁定时约为 -基波幅值）
     } out;
 
     struct {
@@ -31,7 +36,7 @@ typedef struct {
         Float_t osg_u[3];    // SOGI 直接通路输出缓冲区 [n, n-1, n-2]
         Float_t osg_qu[3];   // SOGI 正交通路输出缓冲区 [n, n-1, n-2]
         Float_t ylf[2];      // 环路滤波器数据存储 [n, n-1]
-        Float_t u_Q_prev;    // 上一时刻 Q 轴电压分量（环路滤波器历史值）
+        Float_t err_prev;    // 上一拍的归一化相位误差
 
         // SOGI 系数（内部计算，无需用户配置）
         Float_t osg_k;       // SOGI 增益系数 k，通常取 0.5
@@ -45,6 +50,9 @@ typedef struct {
         Float_t osg_qb1;     // OSG 正交通路分子系数 qb1
         Float_t osg_qb2;     // OSG 正交通路分子系数 qb2
 
+        Float_t lpf_b0;      // 环路滤波器系数 b0 = kp + ki*Ts
+        Float_t lpf_b1;      // 环路滤波器系数 b1 = -kp
+
         Float_t delta_t;     // 采样时间间隔 = 1 / isr_freq，单位：s
     } _state;
 } SPLL_1ph_Sogi_t;
@@ -55,17 +63,17 @@ typedef struct {
  * @param analyzer 单相 SOGI 锁相环结构体指针
  * @param grid_freq 电网额定频率，单位：Hz，如 50.0f 或 60.0f
  * @param isr_freq ISR 调用频率，单位：Hz，如 20000.0f
- * @param lpf_b0 环路滤波器系数 b0
- * @param lpf_b1 环路滤波器系数 b1
+ * @param omega_n 环路自然频率，单位：rad/s，如 2π×20Hz ≈ 125.7
+ * @param zeta 环路阻尼比，通常取 0.707
  *
- * @note 初始化时会自动计算 SOGI 内部系数，无需手动配置。
- *       环路滤波器系数 b0、b1 需根据带宽需求离线设计。
+ * @note 误差按输入幅值归一化，给定 omega_n / zeta 后无需再关心输入幅值。
+ *       SOGI 与环路滤波器的内部系数由本函数自动计算。
  */
 void SPLL_1Ph_Sogi_Init(SPLL_1ph_Sogi_t* analyzer,
                         Float_t grid_freq,
                         Float_t isr_freq,
-                        Float_t lpf_b0,
-                        Float_t lpf_b1);
+                        Float_t omega_n,
+                        Float_t zeta);
 
 /**
  * @brief 复位单相 SOGI 锁相环内部状态
@@ -89,11 +97,11 @@ void SPLL_1Ph_Sogi_Reset(SPLL_1ph_Sogi_t* analyzer);
 void SPLL_1Ph_Sogi_Update(SPLL_1ph_Sogi_t* analyzer, Float_t ac_voltage);
 
 /**
- * @brief 重新计算 SOGI 内部系数
+ * @brief 重新计算 SOGI 与环路滤波器内部系数
  *
  * @param analyzer 单相 SOGI 锁相环结构体指针
  *
- * @note 当 grid_freq 或 isr_freq 发生变化时，需调用此函数更新内部系数。
+ * @note 当 grid_freq、isr_freq、omega_n 或 zeta 发生变化时调用。
  *       正常情况下由 init 自动调用，无需手动调用。
  */
 void SPLL_1Ph_Sogi_Coeff_Calc(SPLL_1ph_Sogi_t* analyzer);
