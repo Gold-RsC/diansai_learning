@@ -341,18 +341,35 @@ Float_t MPPT_Update(MPPT_t* controller, Float_t v_in, Float_t i_in);
 
 ## control/ac/pr
 
-准比例谐振控制器。谐振频率处增益为 `kp + kr`，直流增益为 `kp`。
-用于交流量闭环——PI 对交流量有稳态误差，PR 没有。
+准比例谐振（QPR）控制器。`G(s) = kp + 2*kr*wc*s/(s^2 + 2*wc*s + w0^2)`，谐振频率处
+增益为 `kp + kr`，直流增益为 `kp`。用于交流量闭环——PI 对交流量有稳态误差，PR 没有。
 
 ```c
-void    Pr_Init(Pr_t* controller, Float_t kp, Float_t kr,
+void    PR_Init(PR_t* controller, Float_t kp, Float_t kr,
                 Float_t resonant_freq, Float_t bandwidth, Float_t sample_freq,
-                Float_t out_min, Float_t out_max);
-void    Pr_Reset(Pr_t* controller);
-Float_t Pr_Update(Pr_t* controller, Float_t error);
+                Float_t out_min, Float_t out_max, Float_t init_value);
+void    PR_Reset(PR_t* controller, Float_t init_value);
+void    PR_Set_Output(PR_t* controller, Float_t output);
+Float_t PR_Update(PR_t* controller, Float_t now, Float_t target);
 ```
 
-注意本模块直接接收**误差**，而不是实测值与目标值两个参数。
+`bandwidth` 是半带宽（-3dB 带宽约为其 2 倍），通常取 5~20Hz。系数在 `PR_Init` 内按
+Tustin 离散化一次算好。`PR_Update` 与 `PI_Update` 一致，误差在内部按 `target - now`
+计算。
+
+与 `PI_t` 的设计模式对照：
+
+| 项 | `PI_t` | `PR_t` |
+|---|---|---|
+| 结构体 | `param` / `_state` / `out` | `param` / `_state` / `out` |
+| `Init` | 带 `init_value` | 带 `init_value` |
+| `Update` 入参 | `(now, target)` | `(now, target)` |
+| `Reset` | `PI_Reset(init_value)` | `PR_Reset(init_value)` |
+| 直接设置输出 | `PI_Set_Output` | `PR_Set_Output` |
+
+`PI_Set_Output` 设置的是积分状态，下一次输出从它继续；PR 的输出每拍由 `kp*e + r` 重算，
+`PR_Set_Output` 只影响当前 `out`，下一次 `PR_Update` 会覆盖——这是两者唯一的语义差异，
+源于 PR 没有积分输出状态。
 
 ## control/ac/droop
 
@@ -369,37 +386,54 @@ void Droop_Update(Droop_t* controller, Float_t p, Float_t q);
 
 ## control/ac/spwm
 
-SPWM 占空比生成。`SPWM_Update_Open` 开环，`SPWM_Update` 闭环。
-`SPWM_PLL_t` 版本从外部 PLL 取相位。
+纯调制器：只做「幅值 + 相位 → 占空比」，不含测量与控制器。闭环由调用方把
+`Sin_Analyzer` 与 `PI` / `PR` 组合起来，并网由 `SPLL` 给相位。模块只依赖 `mbase`。
 
 ```c
-void    SPWM_Init(SPWM_t* controller, Float_t pwm_freq, Float_t target_freq,
-                  Float_t target_rms_voltage);
-Float_t SPWM_Update_Open(SPWM_t* controller);
-Float_t SPWM_Update(SPWM_t* controller, Float_t voltage_sample, Float_t current_sample);
-
-void    SPWM_PLL_Init(SPWM_PLL_t* controller, Float_t pwm_freq, Float_t target_freq,
-                      Float_t target_rms_voltage, SPLL_1ph_Sogi_t* spll);
-Float_t SPWM_PLL_Update(SPWM_PLL_t* controller, Float_t grid_voltage,
-                        Float_t voltage_sample, Float_t current_sample);
+void    SPWM_Init(SPWM_t* controller, Float_t pwm_freq, Float_t target_freq, Float_t amplitude);
+void    SPWM_Reset(SPWM_t* controller);
+void    SPWM_Set_Amplitude(SPWM_t* controller, Float_t amplitude);
+void    SPWM_Set_Frequency(SPWM_t* controller, Float_t freq);
+void    SPWM_Set_Phase(SPWM_t* controller, Float_t theta);
+Float_t SPWM_Update(SPWM_t* controller);
 ```
 
-**`SPWM_Update_Open` 必须按 `pwm_freq` 的节奏调用**（PWM 中断里），它靠相位
-累加器推进，每次调用走一个 PWM 周期。
+`duty = 0.5 + 0.5 * amplitude * sin(theta)`，输出限幅 `[0.02, 0.98]`。**必须按
+`pwm_freq` 的节奏调用**（PWM 中断里），每次调用推进一个 PWM 周期。
 
-闭环的电压环是**绝对量**结构：`PI_Update` 的返回值直接赋给
-`param.max_amplitude`，也就是调制比本身，限幅在 PI 内部按 `[0.02, 0.98]` 完成。
+电压闭环（控制器换成 PR 只需替换 `PI_Update` 那一步）：
 
-- `PI_Init` 的 `init_value` 取 0.8，与开环起始调制比一致，省掉启动爬升。
-- 因为 PI 输出是绝对调制比而非增量，**增益的量纲是「调制比 / V」**，数值必须
-  远小于电压环当增量用时的取值。当前取 `kp = 0.01`、`ki = 0.02`。
-- `kp` 项作用于 `(e - e_prev)`，本质是微分；而 `Sin_Analyzer` 的窗口是整整一个
-  工频周期，测量滞后很大。`kp` 一旦超过 `1/P`（P 为被控对象「Vrms / 调制比」
-  的增益），闭环必发散——实测 `kp = 0.08` 时调制比会在 0.02 与 0.98 之间满幅打摆。
+```c
+Sin_Analyzer_Update(&analyzer, v);
+if (analyzer.out.data_ready) {
+    if (analyzer.out.locked) {
+        SPWM_Set_Amplitude(&spwm, PI_Update(&pi, analyzer.out.rms, target_rms));
+    }
+    analyzer.out.data_ready = false;
+}
+duty = SPWM_Update(&spwm);
+```
 
-`SPWM_Init` 里传给 `Sin_Analyzer_Init` 的是 **`pwm_freq`（采样率）**，不是
-`target_freq`：分析器按 `freq = measure_freq / (2N)` 反推信号频率，传错会让
-`out.freq` 恒为 0.125 而不是 50。
+并网/并联（SPLL 给相位；`u_D` 是 SOGI 重构的电网基波幅值，不能直接用瞬时 `fo` 做判据）：
+
+```c
+SPLL_1Ph_Sogi_Update(&spll, grid_v);
+if (fabsf(spll.out.u_D) > lock_min_amp &&
+    fabsf(spll.out.fo - target_freq) < lock_freq_tol) {
+    SPWM_Set_Phase(&spwm, spll.out.theta);
+    SPWM_Set_Frequency(&spwm, spll.out.fo);   // 可选
+}
+duty = SPWM_Update(&spwm);
+```
+
+**PI / PR 增益**：控制器输出是**绝对调制比**而非增量，增益量纲是「调制比 / V」。
+`kp` 项作用于 `(e - e_prev)` 本质是微分，而 `Sin_Analyzer` 的窗口是整整一个
+工频周期，测量滞后大。无 LC 滤波的理想对象上 `kp = 0.01`、`ki = 0.02` 会满幅
+振荡，实测可稳定取 `kp = 0.002`、`ki = 0.002`；实际 LC 对象按相位裕度整定。
+`SPWM_Init` 的 `amplitude` 建议取 0.8，省掉启动爬升。
+
+`SPWM` 内部不做测量，`Sin_Analyzer_Init` 由调用方完成：传给 `measure_freq` 的
+必须是**采样率**（`pwm_freq`），不是 `target_freq`，传错会让 SOGI 系数和测频失配。
 
 ## measure/dc/dc_meter
 
@@ -415,30 +449,73 @@ Float_t Dc_Meter_Update(Dc_Meter_t* analyzer, Float_t sample);
 
 ## measure/ac/sin_analyzer
 
-正弦量测量：真有效值、有功/视在功率、功率因数、频率。
+正弦量测量：基于 SOGI 相位跟踪的基波有效值与频率测量，不再对原始信号做过零检测。
 
 ```c
 void Sin_Analyzer_Init(Sin_Analyzer_t* analyzer, Float_t measure_freq,
-                       Float_t min_freq, Float_t max_freq);
-void Sin_Analyzer_Update(Sin_Analyzer_t* analyzer, Float_t voltage_sample,
-                         Float_t current_sample);
+                       Float_t min_freq, Float_t max_freq, Float_t zcd_threshold);
+void Sin_Analyzer_Reset(Sin_Analyzer_t* analyzer);
+void Sin_Analyzer_Update(Sin_Analyzer_t* analyzer, Float_t sample);
 ```
 
-`out.data_ready` 是**电平式**标志，由消费者清零，且只能有一个消费者。
+内部嵌入 `SPLL_1ph_Sogi_t`，只用它的 SOGI 正交分量（α/β）：`out.rms` 取 αβ 平方和
+在一整个基波周期内的均方根，是**基波**有效值（不含谐波与直流），不是真 RMS；
+`out.freq` 由重构基波 α 的上升过零间隔按 N 个周期块平均得到，不受 PLL 的 `fo` 纹波影响。
+`zcd_threshold` 沿用旧字段名，现为最小基波有效值门限；`min_freq`/`max_freq` 兼作频率门禁，
+启动前 2 个周期与频率块平均完成前都不输出。
+
+输出字段：
+
+| 字段 | 含义 |
+|---|---|
+| `rms` | 基波有效值（SOGI 带通口径） |
+| `amplitude` | 基波峰值（= `rms`×√2） |
+| `rms_total` | 真有效值，含谐波与直流（每点平方和整周期开方） |
+| `dc_offset` | 输入直流分量（整周期平均） |
+| `theta` | 基波相位，`[0, 2π)`，每采样点由 `atan2(α, -β)` 更新，可直接用作 SPWM 调制相位 |
+| `freq` | 跟踪频率，块平均 |
+| `data_ready` | 电平式，每个基波周期置位一次，由消费者清零且只能有一个消费者 |
+| `locked` | 输出是否可信（频率在范围内且幅值过门限）；与 `data_ready` 的区别是它是持续状态 |
+
+`sin_analyzer` 依赖 `measure/ac/spll`，集成时 spll 目录必须在 include 路径上。
+SOGI 系数按额定频率（`GRID_FREQUENCY` 限幅到 `[min_freq, max_freq]`）整定：额定频率附近
+rms/freq 准确；偏离额定较多时（如 51Hz）rms 有约 1% 的带通失配误差，60Hz 这类超范围输入
+会被频率门禁整体拒绝。
+
+## measure/ac/power_meter
+
+单相功率测量：电压、电流各一路 SOGI 正交分解，按电压基波整周期平均，输出基波口径的
+有功 / 无功 / 视在功率与功率因数。
+
+```c
+void Power_Meter_Init(Power_Meter_t* meter, Float_t sample_freq,
+                      Float_t min_freq, Float_t max_freq);
+void Power_Meter_Reset(Power_Meter_t* meter);
+void Power_Meter_Update(Power_Meter_t* meter, Float_t voltage_sample, Float_t current_sample);
+```
+
+`p = vα·iα + vβ·iβ`、`q = vβ·iα - vα·iβ` 在周期内平均后乘 0.5 换算到有效值口径；
+`out.reactive_power` 以**感性为正**。`out.rms_voltage` / `out.rms_current` 为基波有效值，
+`out.power_factor = P/S`。`data_ready` 为电平式，每个电压基波周期置位一次；`locked` 语义
+与 `sin_analyzer` 相同。同样依赖 `measure/ac/spll`，SOGI 按额定频率整定。
 
 ## measure/ac/spll
 
-单相 SOGI 锁相环，取自 TI C2000 SolarLib（原版 IQ23 定点，此处为浮点改写）。
+单相 SOGI 锁相环，取自 TI C2000 SolarLib（原版 IQ23 定点，此处改浮点并增加幅值归一化）。
 
 ```c
 void SPLL_1Ph_Sogi_Init(SPLL_1ph_Sogi_t* analyzer, Float_t grid_freq, Float_t isr_freq,
-                        Float_t lpf_b0, Float_t lpf_b1);
+                        Float_t omega_n, Float_t zeta);
 void SPLL_1Ph_Sogi_Reset(SPLL_1ph_Sogi_t* analyzer);
 void SPLL_1Ph_Sogi_Update(SPLL_1ph_Sogi_t* analyzer, Float_t ac_voltage);
 void SPLL_1Ph_Sogi_Coeff_Calc(SPLL_1ph_Sogi_t* analyzer);
 ```
 
-**输入必须归一化为标幺值**，否则环路会振荡。
+环路误差按 Park 后的 `sqrt(u_Q^2 + u_D^2)` 归一化，环路增益与输入幅值无关，输入可以直接
+是实际采样值。环路滤波器按二阶系统整定：`kp = 2*zeta*omega_n/(2*pi)`、
+`ki = omega_n^2/(2*pi)`，离散为 `b0 = kp + ki*Ts`、`b1 = -kp`；典型
+`omega_n = 2*pi*20Hz`、`zeta = 0.707`，10s 仿真相位误差稳定在 0.89°（来自 Park 一拍延迟）。
+`out.u_Q` / `out.u_D` 保留原始电压量纲，可用于幅值与锁定判断。
 
 ## measure/ac/thd
 

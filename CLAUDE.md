@@ -23,7 +23,7 @@ control/
   ac/           交流量场合 —— pr / droop / spwm
 measure/
   dc/           直流量测量 —— dc_meter
-  ac/           交流量测量 —— sin_analyzer / spll / thd
+  ac/           交流量测量 —— sin_analyzer / power_meter / spll / thd
 debug/          调试输出与上位机 —— print_adapt / vofa
 ```
 
@@ -34,13 +34,13 @@ debug/          调试输出与上位机 —— print_adapt / vofa
 
 **实际连起来的只有 `control/` 和 `measure/`**，其余模块目前是孤立的：
 
-- `SPWM_Update_Open(spwm)` —— 开环，仅靠相位累加器推进，每次调用推进一个 PWM 周期，所以**必须按 `pwm_freq` 的节奏调用**（PWM 中断里）。
-- `SPWM_Update(spwm, v, i)` —— 闭环。`Sin_Analyzer_Update` 逐点累加，`data_ready` 置位时用 PI 修正调制比 `max_amplitude`。
-- `SPWM_PLL_Update(pll, grid_v, v, i)` —— 用 `SPLL_1Ph_Sogi_Update(grid_v)` 锁出相位，取 `spll->out.theta` 作为调制相位，与电网同相。
+- `SPWM_Update(spwm)` —— 纯调制器：只做「幅值 + 相位 → 占空比」，靠相位累加器推进，每次调用推进一个 PWM 周期，所以**必须按 `pwm_freq` 的节奏调用**（PWM 中断里）。模块不含测量与控制器。
+- 电压闭环在应用层组合：`Sin_Analyzer_Update` 测基波有效值，`PI_Update` / `Pr_Update` 的输出直接 `SPWM_Set_Amplitude`，再 `SPWM_Update`。
+- 并网在应用层组合：`SPLL_1Ph_Sogi_Update` 锁相，锁定时 `SPWM_Set_Phase(spll->out.theta)`，再 `SPWM_Update`。
 
 两个值得注意的设计：
 
-- `max_amplitude` 就是调制比本身：`SPWM_Update` / `SPWM_PLL_Update` 把 `PI_Update` 的返回值**直接赋给**它，限幅在 PI 内部按 `[0.02, 0.98]` 完成，`PI_Init` 的 `init_value` 取 0.8（与开环起始调制比一致）。**电压环 PI 的增益量纲是「调制比 / V」**，数值必须远小于把它当增量用时的取值——实测 `kp = 0.08` 会让调制比在 0.02 与 0.98 之间满幅打摆，现在取 `kp = 0.01`、`ki = 0.02`。`kp` 项作用于 `(e − e_prev)` 本质是微分，而 `Sin_Analyzer` 的窗口是整整一个工频周期，测量滞后大，所以 `kp` 一超过 `1/P`（P = 被控对象「Vrms / 调制比」增益）闭环必发散。
+- 控制器输出就是**调制比本身**（`SPWM_Set_Amplitude`），限幅在 `PI_Init` 的 `out_min/out_max` 与 `SPWM_Set_Amplitude` 内完成，`SPWM_Init` 的 `amplitude` 取 0.8（与开环起始调制比一致）。**电压环 PI/PR 的增益量纲是「调制比 / V」**，数值必须远小于把它当增量用时的取值——实测 `kp = 0.08` 会让调制比在 0.02 与 0.98 之间满幅打摆；无 LC 滤波的理想对象上 `kp = 0.01`、`ki = 0.02` 也会振荡，实测可稳定取 `kp = 0.002`、`ki = 0.002`，实际 LC 对象按相位裕度整定。`kp` 项作用于 `(e − e_prev)` 本质是微分，而 `Sin_Analyzer` 的窗口是整整一个工频周期，测量滞后大，所以 `kp` 一超过 `1/P`（P = 被控对象「Vrms / 调制比」增益）闭环必发散。
 - `filter/`（harmonic、kalman、sliding）**当前零调用点**。它们曾经由一层 `Filter_t`（kalman→harmonic 级联）聚合，那层已在 `efb036b` 删除。
 
 ## 代码规范
@@ -81,7 +81,8 @@ INC="-Itemplate/mbase \
      -Itemplate/control/dc/dcdc -Itemplate/control/dc/cv_cc -Itemplate/control/dc/mppt \
      -Itemplate/control/ac/pr -Itemplate/control/ac/droop -Itemplate/control/ac/spwm \
      -Itemplate/measure/dc/dc_meter \
-     -Itemplate/measure/ac/sin_analyzer -Itemplate/measure/ac/spll -Itemplate/measure/ac/thd \
+     -Itemplate/measure/ac/sin_analyzer -Itemplate/measure/ac/power_meter \
+     -Itemplate/measure/ac/spll -Itemplate/measure/ac/thd \
      -Itemplate/debug/print_adapt -Itemplate/debug/vofa \
      -Itmp/stub"                     # HAL 桩目录，见下
 for f in $(find template -name '*.c'); do
@@ -103,6 +104,8 @@ done
 - 桩里的 `__HAL_*` 宏写成 `((void)(...), ...)` 丢弃参数即可——它们只用来让仓库自身的代码通过语法检查，不校验 HAL 内部实现。
 
 **`harmonic.h` 依赖 `template/dsp/notch` 在 include 路径上。** 上面这套 `-I` 已经带上；集成到 Keil 工程时必须同样补上。
+
+**`sin_analyzer.h` 与 `power_meter.h` 依赖 `template/measure/ac/spll` 在 include 路径上**（内部嵌 `SPLL_1ph_Sogi_t` 做相位跟踪/正交分解），同理，上面的 `-I` 已包含。
 
 ## 问题记录：写进 `Issues.md`
 
